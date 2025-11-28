@@ -7,11 +7,12 @@ interface ClientListEnhancedProps {
   onEdit: (client: Client) => void;
   onDelete: (id: string) => void;
   onViewNotes: (client: Client) => void;
+  onViewDetails: (client: Client) => void;
 }
 
 type SortOption = 'name-asc' | 'name-desc' | 'price-high' | 'price-low' | 'date-new' | 'date-old';
 
-export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNotes }: ClientListEnhancedProps) {
+export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNotes, onViewDetails }: ClientListEnhancedProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [countryFilter, setCountryFilter] = useState('All');
@@ -213,35 +214,72 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {sortedClients.map((client) => (
-                  <tr key={client.id} className="hover:bg-blue-50 transition-all duration-200">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{client.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{client.phone_number}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{client.destination}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{client.country}</td>
-                    <td className="px-6 py-4">
+                  <tr key={client.id} className="hover:bg-blue-50 transition-all duration-200 cursor-pointer">
+                    <td
+                      onClick={() => onViewDetails(client)}
+                      className="px-6 py-4 text-sm font-medium text-gray-900"
+                    >
+                      {client.name}
+                    </td>
+                    <td
+                      onClick={() => onViewDetails(client)}
+                      className="px-6 py-4 text-sm text-gray-700"
+                    >
+                      {client.phone_number}
+                    </td>
+                    <td
+                      onClick={() => onViewDetails(client)}
+                      className="px-6 py-4 text-sm text-gray-700"
+                    >
+                      {client.destination}
+                    </td>
+                    <td
+                      onClick={() => onViewDetails(client)}
+                      className="px-6 py-4 text-sm text-gray-700"
+                    >
+                      {client.country}
+                    </td>
+                    <td
+                      onClick={() => onViewDetails(client)}
+                      className="px-6 py-4"
+                    >
                       <span className={`inline-flex px-3 py-1.5 rounded-full text-xs font-semibold border shadow-sm ${getStatusColor(client.status)}`}>
                         {client.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-gray-900">{formatPrice(client.price)}</td>
+                    <td
+                      onClick={() => onViewDetails(client)}
+                      className="px-6 py-4 text-sm font-semibold text-gray-900"
+                    >
+                      {formatPrice(client.price)}
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => onViewNotes(client)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewNotes(client);
+                          }}
                           className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-110"
                           title="View notes"
                         >
                           <MessageSquare className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => onEdit(client)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(client);
+                          }}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110"
                           title="Edit client"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => onDelete(client.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(client.id);
+                          }}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
                           title="Delete client"
                         >

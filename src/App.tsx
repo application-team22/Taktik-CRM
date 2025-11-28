@@ -9,6 +9,9 @@ import ClientForm from './components/ClientForm';
 import ClientNotes from './components/ClientNotes';
 import TasksView from './components/TasksView';
 import AdminPanel from './components/AdminPanel';
+import ClientDetails from './components/ClientDetails';
+import Toast from './components/Toast';
+import ConfirmDialog from './components/ConfirmDialog';
 
 type View = 'dashboard' | 'clients' | 'tasks' | 'admin';
 
@@ -19,6 +22,14 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [notesClient, setNotesClient] = useState<Client | null>(null);
+  const [detailsClient, setDetailsClient] = useState<Client | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   useEffect(() => {
     fetchClients();
@@ -50,12 +61,14 @@ function App() {
           .eq('id', editingClient.id);
 
         if (error) throw error;
+        setToast({ message: 'Client updated successfully!', type: 'success' });
       } else {
         const { error } = await supabase
           .from('clients')
           .insert([formData]);
 
         if (error) throw error;
+        setToast({ message: 'Client added successfully!', type: 'success' });
       }
 
       await fetchClients();
@@ -63,7 +76,7 @@ function App() {
       setEditingClient(null);
     } catch (error) {
       console.error('Error saving client:', error);
-      alert('Failed to save client. Please try again.');
+      setToast({ message: 'Failed to save client. Please try again.', type: 'error' });
     }
   };
 
@@ -72,21 +85,31 @@ function App() {
     setShowForm(true);
   };
 
-  const handleDeleteClient = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this client?')) return;
+  const handleDeleteClient = (id: string) => {
+    const client = clients.find(c => c.id === id);
+    setConfirmDialog({
+      show: true,
+      title: 'Delete Client',
+      message: `Are you sure you want to delete ${client?.name || 'this client'}? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase
+            .from('clients')
+            .delete()
+            .eq('id', id);
 
-    try {
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      await fetchClients();
-    } catch (error) {
-      console.error('Error deleting client:', error);
-      alert('Failed to delete client. Please try again.');
-    }
+          if (error) throw error;
+          setToast({ message: 'Client deleted successfully!', type: 'success' });
+          await fetchClients();
+          setDetailsClient(null);
+        } catch (error) {
+          console.error('Error deleting client:', error);
+          setToast({ message: 'Failed to delete client. Please try again.', type: 'error' });
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
   };
 
   const handleCloseForm = () => {
@@ -100,6 +123,26 @@ function App() {
 
   const handleCloseNotes = () => {
     setNotesClient(null);
+  };
+
+  const handleViewDetails = (client: Client) => {
+    setDetailsClient(client);
+  };
+
+  const handleCloseDetails = () => {
+    setDetailsClient(null);
+  };
+
+  const handleAddNoteFromDetails = () => {
+    if (detailsClient) {
+      setNotesClient(detailsClient);
+      setDetailsClient(null);
+    }
+  };
+
+  const handleAddTaskFromDetails = () => {
+    setDetailsClient(null);
+    setView('tasks');
   };
 
   if (loading) {
@@ -154,6 +197,7 @@ function App() {
               onEdit={handleEditClient}
               onDelete={handleDeleteClient}
               onViewNotes={handleViewNotes}
+              onViewDetails={handleViewDetails}
             />
           )}
           {view === 'tasks' && <TasksView />}
@@ -171,6 +215,34 @@ function App() {
 
       {notesClient && (
         <ClientNotes client={notesClient} onClose={handleCloseNotes} />
+      )}
+
+      {detailsClient && (
+        <ClientDetails
+          client={detailsClient}
+          onClose={handleCloseDetails}
+          onEdit={handleEditClient}
+          onDelete={handleDeleteClient}
+          onAddNote={handleAddNoteFromDetails}
+          onAddTask={handleAddTaskFromDetails}
+        />
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
       )}
     </div>
   );

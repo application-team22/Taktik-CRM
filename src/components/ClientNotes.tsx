@@ -3,6 +3,7 @@ import { X, Plus, Clock } from 'lucide-react';
 import { Client } from '../types/client';
 import { Note } from '../types/note';
 import { supabase } from '../lib/supabase';
+import Toast from './Toast';
 
 interface ClientNotesProps {
   client: Client;
@@ -14,6 +15,7 @@ export default function ClientNotes({ client, onClose }: ClientNotesProps) {
   const [newNote, setNewNote] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     fetchNotes();
@@ -38,7 +40,10 @@ export default function ClientNotes({ client, onClose }: ClientNotesProps) {
   };
 
   const handleAddNote = async () => {
-    if (!newNote.trim()) return;
+    if (!newNote.trim()) {
+      setToast({ message: 'Please enter a note', type: 'error' });
+      return;
+    }
 
     try {
       setSaving(true);
@@ -49,10 +54,11 @@ export default function ClientNotes({ client, onClose }: ClientNotesProps) {
       if (error) throw error;
 
       setNewNote('');
+      setToast({ message: 'Note added successfully!', type: 'success' });
       await fetchNotes();
     } catch (error) {
       console.error('Error adding note:', error);
-      alert('Failed to add note. Please try again.');
+      setToast({ message: 'Failed to add note. Please try again.', type: 'error' });
     } finally {
       setSaving(false);
     }
@@ -152,6 +158,14 @@ export default function ClientNotes({ client, onClose }: ClientNotesProps) {
           </button>
         </div>
       </div>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

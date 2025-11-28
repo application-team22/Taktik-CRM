@@ -9,6 +9,39 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ clients }: DashboardProps) {
+  if (clients.length === 0) {
+    return (
+      <div className="space-y-8">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl shadow-xl p-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 opacity-10">
+            <Sparkles className="w-32 h-32" />
+          </div>
+          <div className="relative z-10">
+            <h1 className="text-3xl font-bold mb-2">Taktik CRM Dashboard</h1>
+            <p className="text-blue-100 font-medium">Travel Agency Client Management System</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-lg p-12 text-center border border-gray-200">
+          <div className="max-w-md mx-auto">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Sparkles className="w-10 h-10 text-blue-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Welcome to Taktik CRM!</h2>
+            <p className="text-gray-600 mb-6">
+              Get started by adding your first client. Click the "Add Client" button in the Clients section to begin managing your travel agency customers.
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-sm text-blue-800">
+                Once you add clients, you'll see statistics, charts, and activity feeds right here on your dashboard.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl shadow-xl p-8 relative overflow-hidden">

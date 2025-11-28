@@ -3,6 +3,8 @@ import { Plus, Calendar, CheckCircle, Circle, Clock, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Task, TaskFormData } from '../types/task';
 import { Client } from '../types/client';
+import Toast from './Toast';
+import ConfirmDialog from './ConfirmDialog';
 
 export default function TasksView() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -15,6 +17,13 @@ export default function TasksView() {
     due_date: '',
     status: 'pending',
   });
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -44,7 +53,7 @@ export default function TasksView() {
     e.preventDefault();
 
     if (!formData.client_id || !formData.description || !formData.due_date) {
-      alert('Please fill in all required fields');
+      setToast({ message: 'Please fill in all required fields', type: 'error' });
       return;
     }
 
@@ -60,10 +69,11 @@ export default function TasksView() {
         due_date: '',
         status: 'pending',
       });
+      setToast({ message: 'Task created successfully!', type: 'success' });
       await fetchData();
     } catch (error) {
       console.error('Error creating task:', error);
-      alert('Failed to create task. Please try again.');
+      setToast({ message: 'Failed to create task. Please try again.', type: 'error' });
     }
   };
 
@@ -81,25 +91,38 @@ export default function TasksView() {
         .eq('id', task.id);
 
       if (error) throw error;
+      setToast({
+        message: newStatus === 'completed' ? 'Task marked as completed!' : 'Task marked as pending!',
+        type: 'success'
+      });
       await fetchData();
     } catch (error) {
       console.error('Error updating task:', error);
-      alert('Failed to update task. Please try again.');
+      setToast({ message: 'Failed to update task. Please try again.', type: 'error' });
     }
   };
 
-  const handleDeleteTask = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+  const handleDeleteTask = (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    setConfirmDialog({
+      show: true,
+      title: 'Delete Task',
+      message: `Are you sure you want to delete this task? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.from('tasks').delete().eq('id', id);
 
-    try {
-      const { error } = await supabase.from('tasks').delete().eq('id', id);
-
-      if (error) throw error;
-      await fetchData();
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      alert('Failed to delete task. Please try again.');
-    }
+          if (error) throw error;
+          setToast({ message: 'Task deleted successfully!', type: 'success' });
+          await fetchData();
+        } catch (error) {
+          console.error('Error deleting task:', error);
+          setToast({ message: 'Failed to delete task. Please try again.', type: 'error' });
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
   };
 
   const getClientName = (clientId: string) => {
@@ -128,6 +151,24 @@ export default function TasksView() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading tasks...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (clients.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-2xl shadow-lg p-12 text-center border border-gray-200">
+          <div className="max-w-md mx-auto">
+            <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-10 h-10 text-yellow-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">No Clients Yet</h2>
+            <p className="text-gray-600 mb-6">
+              You need to add clients before you can create tasks. Head over to the Clients section to add your first client.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -195,7 +236,11 @@ export default function TasksView() {
         </div>
         <div className="p-6">
           {pendingTasks.length === 0 ? (
-            <p className="text-center text-gray-500 py-8">No pending tasks. Great job!</p>
+            <div className="text-center py-8 bg-gray-50 rounded-lg">
+              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+              <p className="text-gray-700 font-medium">No pending tasks</p>
+              <p className="text-gray-500 text-sm mt-1">Great job! Click "Add Task" to create a new task.</p>
+            </div>
           ) : (
             <div className="space-y-3">
               {pendingTasks.map((task) => (
@@ -362,6 +407,23 @@ export default function TasksView() {
             </form>
           </div>
         </div>
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
       )}
     </div>
   );
