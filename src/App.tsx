@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Menu } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { Client, ClientFormData } from './types/client';
 import Sidebar from './components/Sidebar';
@@ -30,6 +30,7 @@ function App() {
     message: string;
     onConfirm: () => void;
   } | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     fetchClients();
@@ -158,19 +159,34 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
-      <Sidebar currentView={view} onNavigate={(newView) => setView(newView as View)} />
+      <Sidebar
+        currentView={view}
+        onNavigate={(newView) => {
+          setView(newView as View);
+          setIsSidebarOpen(false);
+        }}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
-      <div className="flex-1 ml-64">
-        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-          <div className="px-8 py-5 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+      <div className="flex-1 md:ml-64">
+        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-20">
+          <div className="px-4 md:px-8 py-4 md:py-5 flex items-center justify-between">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+              aria-label="Open menu"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <div className="flex-1">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">
                 {view === 'dashboard' && 'Dashboard'}
                 {view === 'clients' && 'Clients'}
                 {view === 'tasks' && 'Tasks & Reminders'}
                 {view === 'admin' && 'Admin Panel'}
               </h1>
-              <p className="text-sm text-gray-500 mt-1 font-medium">
+              <p className="text-xs md:text-sm text-gray-500 mt-1 font-medium hidden sm:block">
                 {view === 'dashboard' && 'Welcome to Taktik CRM'}
                 {view === 'clients' && 'Manage your travel agency client database'}
                 {view === 'tasks' && 'Track follow-ups and client tasks'}
@@ -180,16 +196,16 @@ function App() {
             {view === 'clients' && (
               <button
                 onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 hover:scale-105"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 hover:scale-105"
               >
-                <Plus className="w-5 h-5" />
-                Add Client
+                <Plus className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="hidden sm:inline">Add Client</span>
               </button>
             )}
           </div>
         </header>
 
-        <main className="px-8 py-6">
+        <main className="px-4 md:px-8 py-4 md:py-6">
           {view === 'dashboard' && <Dashboard clients={clients} />}
           {view === 'clients' && (
             <ClientListEnhanced
