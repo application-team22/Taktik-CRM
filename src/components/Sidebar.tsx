@@ -1,18 +1,22 @@
-import { LayoutDashboard, Users, CheckSquare, Settings, Plane, X } from 'lucide-react';
+import { LayoutDashboard, Users, CheckSquare, Settings, X } from 'lucide-react';
+import { translations } from '../lib/translations';
 
 interface SidebarProps {
   currentView: string;
   onNavigate: (view: string) => void;
   isOpen: boolean;
   onClose: () => void;
+  language: 'EN' | 'AR';
 }
 
-export default function Sidebar({ currentView, onNavigate, isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ currentView, onNavigate, isOpen, onClose, language }: SidebarProps) {
+  const t = translations[language];
+
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'clients', label: 'Clients', icon: Users },
-    { id: 'tasks', label: 'Tasks', icon: CheckSquare },
-    { id: 'admin', label: 'Admin Panel', icon: Settings },
+    { id: 'dashboard', label: t.navigation.dashboard, icon: LayoutDashboard },
+    { id: 'clients', label: t.navigation.clients, icon: Users },
+    { id: 'tasks', label: t.navigation.tasks, icon: CheckSquare },
+    { id: 'admin', label: t.navigation.admin, icon: Settings },
   ];
 
   return (
@@ -38,8 +42,8 @@ export default function Sidebar({ currentView, onNavigate, isOpen, onClose }: Si
               className="h-10 w-auto object-contain"
             />
             <div>
-              <span className="text-xl font-bold text-gray-900 block">Taktik CRM</span>
-              <span className="text-xs text-gray-500 font-medium">Travel Management</span>
+              <span className="text-xl font-bold text-gray-900 block">{t.branding.appName}</span>
+              <span className="text-xs text-gray-500 font-medium">{t.branding.appSubtitle}</span>
             </div>
           </div>
 

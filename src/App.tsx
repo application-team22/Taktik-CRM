@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Menu } from 'lucide-react';
 import { supabase } from './lib/supabase';
+import { translations } from './lib/translations';
 import { Client, ClientFormData } from './types/client';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -172,6 +173,8 @@ function App() {
     );
   }
 
+  const t = translations[language];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
       <Sidebar
@@ -182,6 +185,7 @@ function App() {
         }}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        language={language}
       />
 
       <div className="flex-1 md:ml-64">
@@ -196,16 +200,16 @@ function App() {
             </button>
             <div className="flex-1">
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-                {view === 'dashboard' && 'Dashboard'}
-                {view === 'clients' && 'Clients'}
-                {view === 'tasks' && 'Tasks & Reminders'}
-                {view === 'admin' && 'Admin Panel'}
+                {view === 'dashboard' && t.header.dashboardTitle}
+                {view === 'clients' && t.header.clientsTitle}
+                {view === 'tasks' && t.header.tasksTitle}
+                {view === 'admin' && t.header.adminTitle}
               </h1>
               <p className="text-xs md:text-sm text-gray-500 mt-1 font-medium hidden sm:block">
-                {view === 'dashboard' && 'Welcome to Taktik CRM'}
-                {view === 'clients' && 'Manage your travel agency client database'}
-                {view === 'tasks' && 'Track follow-ups and client tasks'}
-                {view === 'admin' && 'System management and analytics'}
+                {view === 'dashboard' && t.header.dashboardSubtitle}
+                {view === 'clients' && t.header.clientsSubtitle}
+                {view === 'tasks' && t.header.tasksSubtitle}
+                {view === 'admin' && t.header.adminSubtitle}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -216,7 +220,7 @@ function App() {
                   className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 hover:scale-105"
                 >
                   <Plus className="w-4 h-4 md:w-5 md:h-5" />
-                  <span className="hidden sm:inline">Add Client</span>
+                  <span className="hidden sm:inline">{t.actions.addClient}</span>
                 </button>
               )}
             </div>
