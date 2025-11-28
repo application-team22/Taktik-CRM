@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { Client, ClientFormData } from './types/client';
+import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
-import ClientList from './components/ClientList';
+import ClientListEnhanced from './components/ClientListEnhanced';
 import ClientForm from './components/ClientForm';
+import ClientNotes from './components/ClientNotes';
+import TasksView from './components/TasksView';
+import AdminPanel from './components/AdminPanel';
 
-type View = 'dashboard' | 'clients';
+type View = 'dashboard' | 'clients' | 'tasks' | 'admin';
 
 function App() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -14,6 +18,7 @@ function App() {
   const [view, setView] = useState<View>('dashboard');
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [notesClient, setNotesClient] = useState<Client | null>(null);
 
   useEffect(() => {
     fetchClients();
@@ -89,6 +94,14 @@ function App() {
     setEditingClient(null);
   };
 
+  const handleViewNotes = (client: Client) => {
+    setNotesClient(client);
+  };
+
+  const handleCloseNotes = () => {
+    setNotesClient(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -101,37 +114,27 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-md border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">Taktik CRM</span>
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar currentView={view} onNavigate={(newView) => setView(newView as View)} />
+
+      <div className="flex-1 ml-64">
+        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+          <div className="px-8 py-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {view === 'dashboard' && 'Dashboard'}
+                {view === 'clients' && 'Clients'}
+                {view === 'tasks' && 'Tasks & Reminders'}
+                {view === 'admin' && 'Admin Panel'}
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                {view === 'dashboard' && 'Welcome to Taktik CRM'}
+                {view === 'clients' && 'Manage your travel agency client database'}
+                {view === 'tasks' && 'Track follow-ups and client tasks'}
+                {view === 'admin' && 'System management and analytics'}
+              </p>
             </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setView('dashboard')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  view === 'dashboard'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                Dashboard
-              </button>
-              <button
-                onClick={() => setView('clients')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  view === 'clients'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                Clients
-              </button>
+            {view === 'clients' && (
               <button
                 onClick={() => setShowForm(true)}
                 className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-md"
@@ -139,30 +142,24 @@ function App() {
                 <Plus className="w-5 h-5" />
                 Add Client
               </button>
-            </div>
+            )}
           </div>
-        </div>
-      </nav>
+        </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {view === 'dashboard' ? (
-          <Dashboard clients={clients} />
-        ) : (
-          <div>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">All Clients</h2>
-              <p className="text-gray-600 mt-1">
-                Manage your travel agency client database
-              </p>
-            </div>
-            <ClientList
+        <main className="px-8 py-6">
+          {view === 'dashboard' && <Dashboard clients={clients} />}
+          {view === 'clients' && (
+            <ClientListEnhanced
               clients={clients}
               onEdit={handleEditClient}
               onDelete={handleDeleteClient}
+              onViewNotes={handleViewNotes}
             />
-          </div>
-        )}
-      </main>
+          )}
+          {view === 'tasks' && <TasksView />}
+          {view === 'admin' && <AdminPanel clients={clients} />}
+        </main>
+      </div>
 
       {showForm && (
         <ClientForm
@@ -170,6 +167,10 @@ function App() {
           onSave={handleSaveClient}
           onClose={handleCloseForm}
         />
+      )}
+
+      {notesClient && (
+        <ClientNotes client={notesClient} onClose={handleCloseNotes} />
       )}
     </div>
   );
