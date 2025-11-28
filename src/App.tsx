@@ -12,6 +12,7 @@ import AdminPanel from './components/AdminPanel';
 import ClientDetails from './components/ClientDetails';
 import Toast from './components/Toast';
 import ConfirmDialog from './components/ConfirmDialog';
+import LanguageSwitcher from './components/LanguageSwitcher';
 
 type View = 'dashboard' | 'clients' | 'tasks' | 'admin';
 
@@ -32,10 +33,18 @@ function App() {
     onConfirm: () => void;
   } | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [language, setLanguage] = useState<'EN' | 'AR'>(() => {
+    const saved = localStorage.getItem('language');
+    return (saved as 'EN' | 'AR') || 'EN';
+  });
 
   useEffect(() => {
     fetchClients();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('language', language);
+  }, [language]);
 
   const fetchClients = async (isRefresh = false) => {
     try {
@@ -199,15 +208,18 @@ function App() {
                 {view === 'admin' && 'System management and analytics'}
               </p>
             </div>
-            {view === 'clients' && (
-              <button
-                onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 hover:scale-105"
-              >
-                <Plus className="w-4 h-4 md:w-5 md:h-5" />
-                <span className="hidden sm:inline">Add Client</span>
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              <LanguageSwitcher language={language} onLanguageChange={setLanguage} />
+              {view === 'clients' && (
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 hover:scale-105"
+                >
+                  <Plus className="w-4 h-4 md:w-5 md:h-5" />
+                  <span className="hidden sm:inline">Add Client</span>
+                </button>
+              )}
+            </div>
           </div>
         </header>
 
