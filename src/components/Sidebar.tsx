@@ -32,9 +32,11 @@ export default function Sidebar({ currentView, onNavigate, isOpen, onClose }: Si
       >
         <div className="p-6 border-b border-gray-200 bg-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2.5 rounded-xl shadow-md">
-              <Plane className="w-6 h-6 text-white" />
-            </div>
+            <img
+              src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRXbGugbzv4HWLxhujILeIK99Vc7BtVSsA7Cw&s"
+              alt="Taktik Travel Logo"
+              className="h-10 w-auto object-contain"
+            />
             <div>
               <span className="text-xl font-bold text-gray-900 block">Taktik CRM</span>
               <span className="text-xs text-gray-500 font-medium">Travel Management</span>
