@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Edit2, Trash2, Search, X, Download, MessageSquare } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Edit2, Trash2, Search, X, Download, MessageSquare, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Client } from '../types/client';
 
 interface ClientListEnhancedProps {
@@ -12,11 +12,31 @@ interface ClientListEnhancedProps {
 
 type SortOption = 'name-asc' | 'name-desc' | 'price-high' | 'price-low' | 'date-new' | 'date-old';
 
+const ITEMS_PER_PAGE = 20;
+
 export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNotes, onViewDetails }: ClientListEnhancedProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [countryFilter, setCountryFilter] = useState('All');
   const [sortOption, setSortOption] = useState<SortOption>('date-new');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    setIsSearching(true);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setIsSearching(false);
+      setCurrentPage(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, countryFilter, sortOption]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -40,49 +60,94 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
     }).format(price);
   };
 
-  const uniqueCountries = Array.from(new Set(clients.map(c => c.country))).sort();
+  const uniqueCountries = useMemo(
+    () => Array.from(new Set(clients.map(c => c.country))).sort(),
+    [clients]
+  );
 
-  const filteredClients = clients.filter(client => {
-    const matchesSearch =
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.country.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredAndSortedClients = useMemo(() => {
+    const filtered = clients.filter(client => {
+      const matchesSearch =
+        client.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        client.destination.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        client.country.toLowerCase().includes(debouncedSearch.toLowerCase());
 
-    const matchesStatus = statusFilter === 'All' || client.status === statusFilter;
-    const matchesCountry = countryFilter === 'All' || client.country === countryFilter;
+      const matchesStatus = statusFilter === 'All' || client.status === statusFilter;
+      const matchesCountry = countryFilter === 'All' || client.country === countryFilter;
 
-    return matchesSearch && matchesStatus && matchesCountry;
-  });
+      return matchesSearch && matchesStatus && matchesCountry;
+    });
 
-  const sortedClients = [...filteredClients].sort((a, b) => {
-    switch (sortOption) {
-      case 'name-asc':
-        return a.name.localeCompare(b.name);
-      case 'name-desc':
-        return b.name.localeCompare(a.name);
-      case 'price-high':
-        return b.price - a.price;
-      case 'price-low':
-        return a.price - b.price;
-      case 'date-new':
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      case 'date-old':
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      default:
-        return 0;
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortOption) {
+        case 'name-asc':
+          return a.name.localeCompare(b.name);
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        case 'price-high':
+          return b.price - a.price;
+        case 'price-low':
+          return a.price - b.price;
+        case 'date-new':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'date-old':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [clients, debouncedSearch, statusFilter, countryFilter, sortOption]);
+
+  const totalPages = Math.ceil(filteredAndSortedClients.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedClients = filteredAndSortedClients.slice(startIndex, endIndex);
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push('...');
+        pages.push(totalPages);
+      }
     }
-  });
+
+    return pages;
+  };
 
   const handleClearFilters = () => {
     setSearchTerm('');
+    setDebouncedSearch('');
     setStatusFilter('All');
     setCountryFilter('All');
     setSortOption('date-new');
+    setCurrentPage(1);
   };
 
   const handleExportCSV = () => {
     const headers = ['Name', 'Phone', 'Destination', 'Country', 'Status', 'Price', 'Created At'];
-    const rows = sortedClients.map(client => [
+    const rows = filteredAndSortedClients.map(client => [
       client.name,
       client.phone_number,
       client.destination,
@@ -108,6 +173,21 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
 
   const hasActiveFilters = searchTerm || statusFilter !== 'All' || countryFilter !== 'All' || sortOption !== 'date-new';
 
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageClick = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-xl shadow-lg p-3 md:p-5">
@@ -120,8 +200,11 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
                 placeholder="Search clients..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 md:py-2.5 border border-gray-300 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="w-full pl-10 pr-10 py-3 md:py-2.5 border border-gray-300 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               />
+              {isSearching && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600 animate-spin" />
+              )}
             </div>
           </div>
 
@@ -175,7 +258,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
               </button>
             )}
             <span className="text-xs md:text-sm text-gray-600 text-center sm:text-left">
-              Showing {sortedClients.length} of {clients.length}
+              Showing {startIndex + 1}-{Math.min(endIndex, filteredAndSortedClients.length)} of {filteredAndSortedClients.length} {filteredAndSortedClients.length !== clients.length && `(filtered from ${clients.length} total)`}
             </span>
           </div>
 
@@ -190,7 +273,12 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
         </div>
       </div>
 
-      {sortedClients.length === 0 ? (
+      {isSearching ? (
+        <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+          <Loader2 className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-spin" />
+          <p className="text-gray-600 text-lg">Searching...</p>
+        </div>
+      ) : filteredAndSortedClients.length === 0 ? (
         <div className="bg-white rounded-xl shadow-lg p-6 md:p-12 text-center">
           <p className="text-gray-500 text-base md:text-lg">
             {clients.length === 0
@@ -215,7 +303,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {sortedClients.map((client) => (
+                  {paginatedClients.map((client) => (
                     <tr key={client.id} className="hover:bg-blue-50 transition-all duration-200 cursor-pointer">
                       <td
                         onClick={() => onViewDetails(client)}
@@ -297,7 +385,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
           </div>
 
           <div className="md:hidden space-y-3">
-            {sortedClients.map((client) => (
+            {paginatedClients.map((client) => (
               <div
                 key={client.id}
                 onClick={() => onViewDetails(client)}
@@ -374,6 +462,52 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
               </div>
             ))}
           </div>
+
+          {totalPages > 1 && (
+            <div className="bg-white rounded-xl shadow-lg p-4 mt-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 w-full sm:w-auto"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                  Previous
+                </button>
+
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                  {getPageNumbers().map((page, index) => (
+                    page === '...' ? (
+                      <span key={`ellipsis-${index}`} className="px-3 py-2 text-gray-500">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={page}
+                        onClick={() => handlePageClick(page as number)}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                          currentPage === page
+                            ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
+                            : 'bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    )
+                  ))}
+                </div>
+
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 w-full sm:w-auto"
+                >
+                  Next
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

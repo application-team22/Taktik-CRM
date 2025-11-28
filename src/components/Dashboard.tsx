@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Sparkles } from 'lucide-react';
 import { Client } from '../types/client';
 import StatisticsCards from './StatisticsCards';
@@ -8,7 +9,7 @@ interface DashboardProps {
   clients: Client[];
 }
 
-export default function Dashboard({ clients }: DashboardProps) {
+function Dashboard({ clients }: DashboardProps) {
   if (clients.length === 0) {
     return (
       <div className="space-y-8">
@@ -94,3 +95,5 @@ function getQuickStats(clients: Client[]) {
     { label: 'New Leads', value: statusCounts['New Lead'] || 0 },
   ];
 }
+
+export default memo(Dashboard);

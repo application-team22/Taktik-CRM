@@ -90,8 +90,8 @@ export default function ChartsSection({ clients }: ChartsSectionProps) {
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, value, percent }) => {
-                const displayName = name.length > 10 ? `${name.slice(0, 10)}...` : name;
+              label={({ name, value }) => {
+                const displayName = name && name.length > 10 ? `${name.slice(0, 10)}...` : name;
                 return window.innerWidth < 640
                   ? `${value}`
                   : `${displayName}: ${value}`;
@@ -100,7 +100,7 @@ export default function ChartsSection({ clients }: ChartsSectionProps) {
               fill="#8884d8"
               dataKey="value"
             >
-              {countryData.map((entry, index) => (
+              {countryData.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>

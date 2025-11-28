@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Client } from '../types/client';
 
@@ -14,25 +15,26 @@ interface StatisticsCardsProps {
   clients: Client[];
 }
 
-export default function StatisticsCards({ clients }: StatisticsCardsProps) {
-  const totalClients = clients.length;
+function StatisticsCards({ clients }: StatisticsCardsProps) {
+  const statCards: StatCard[] = useMemo(() => {
+    const totalClients = clients.length;
 
-  const statusCounts = clients.reduce((acc, client) => {
-    acc[client.status] = (acc[client.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+    const statusCounts = clients.reduce((acc, client) => {
+      acc[client.status] = (acc[client.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-  const bookedClients = statusCounts['Booked'] || 0;
-  const contactedClients = statusCounts['Contacted'] || 0;
+    const bookedClients = statusCounts['Booked'] || 0;
+    const contactedClients = statusCounts['Contacted'] || 0;
 
-  const totalRevenue = clients.reduce((sum, client) => sum + (client.price || 0), 0);
+    const totalRevenue = clients.reduce((sum, client) => sum + (client.price || 0), 0);
 
-  const calculateTrend = (current: number, previous: number = current * 0.8) => {
-    if (previous === 0) return 0;
-    return Math.round(((current - previous) / previous) * 100);
-  };
+    const calculateTrend = (current: number, previous: number = current * 0.8) => {
+      if (previous === 0) return 0;
+      return Math.round(((current - previous) / previous) * 100);
+    };
 
-  const statCards: StatCard[] = [
+    return [
     {
       label: 'Total Clients',
       value: totalClients,
@@ -78,6 +80,7 @@ export default function StatisticsCards({ clients }: StatisticsCardsProps) {
       trend: calculateTrend(totalRevenue),
     },
   ];
+  }, [clients]);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -125,3 +128,5 @@ export default function StatisticsCards({ clients }: StatisticsCardsProps) {
     </div>
   );
 }
+
+export default memo(StatisticsCards);

@@ -103,7 +103,6 @@ export default function TasksView() {
   };
 
   const handleDeleteTask = (id: string) => {
-    const task = tasks.find(t => t.id === id);
     setConfirmDialog({
       show: true,
       title: 'Delete Task',

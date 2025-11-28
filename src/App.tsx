@@ -18,6 +18,7 @@ type View = 'dashboard' | 'clients' | 'tasks' | 'admin';
 function App() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [view, setView] = useState<View>('dashboard');
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -36,9 +37,13 @@ function App() {
     fetchClients();
   }, []);
 
-  const fetchClients = async () => {
+  const fetchClients = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       const { data, error } = await supabase
         .from('clients')
         .select('*')
@@ -50,6 +55,7 @@ function App() {
       console.error('Error fetching clients:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -72,7 +78,7 @@ function App() {
         setToast({ message: 'Client added successfully!', type: 'success' });
       }
 
-      await fetchClients();
+      await fetchClients(true);
       setShowForm(false);
       setEditingClient(null);
     } catch (error) {
@@ -101,7 +107,7 @@ function App() {
 
           if (error) throw error;
           setToast({ message: 'Client deleted successfully!', type: 'success' });
-          await fetchClients();
+          await fetchClients(true);
           setDetailsClient(null);
         } catch (error) {
           console.error('Error deleting client:', error);
@@ -206,6 +212,12 @@ function App() {
         </header>
 
         <main className="px-4 md:px-8 py-4 md:py-6">
+          {refreshing && (
+            <div className="fixed top-20 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-30">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              <span className="text-sm font-medium">Updating...</span>
+            </div>
+          )}
           {view === 'dashboard' && <Dashboard clients={clients} />}
           {view === 'clients' && (
             <ClientListEnhanced
