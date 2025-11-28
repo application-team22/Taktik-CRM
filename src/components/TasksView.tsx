@@ -142,7 +142,7 @@ export default function TasksView() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-md"
+          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105"
         >
           <Plus className="w-5 h-5" />
           Add Task
@@ -150,31 +150,31 @@ export default function TasksView() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 p-6 border-l-4 border-yellow-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Pending Tasks</p>
               <p className="text-3xl font-bold text-gray-800 mt-2">{pendingTasks.length}</p>
             </div>
-            <div className="bg-yellow-100 p-3 rounded-lg">
+            <div className="bg-yellow-100 p-3 rounded-xl shadow-md">
               <Clock className="w-6 h-6 text-yellow-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 p-6 border-l-4 border-green-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Completed</p>
               <p className="text-3xl font-bold text-gray-800 mt-2">{completedTasks.length}</p>
             </div>
-            <div className="bg-green-100 p-3 rounded-lg">
+            <div className="bg-green-100 p-3 rounded-xl shadow-md">
               <CheckCircle className="w-6 h-6 text-green-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500">
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 p-6 border-l-4 border-red-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Overdue</p>
@@ -182,14 +182,14 @@ export default function TasksView() {
                 {pendingTasks.filter((t) => isOverdue(t.due_date, t.status)).length}
               </p>
             </div>
-            <div className="bg-red-100 p-3 rounded-lg">
+            <div className="bg-red-100 p-3 rounded-xl shadow-md">
               <Calendar className="w-6 h-6 text-red-600" />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md">
+      <div className="bg-white rounded-xl shadow-lg">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-800">Pending Tasks</h3>
         </div>
@@ -201,16 +201,16 @@ export default function TasksView() {
               {pendingTasks.map((task) => (
                 <div
                   key={task.id}
-                  className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
+                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 ${
                     isOverdue(task.due_date, task.status)
-                      ? 'bg-red-50 border-red-200'
-                      : 'bg-gray-50 border-gray-200 hover:border-blue-300'
+                      ? 'bg-red-50 border-red-200 shadow-sm'
+                      : 'bg-gradient-to-r from-gray-50 to-white border-gray-200 hover:border-blue-300 hover:shadow-md'
                   }`}
                 >
                   <div className="flex items-center gap-4 flex-1">
                     <button
                       onClick={() => handleToggleStatus(task)}
-                      className="text-gray-400 hover:text-blue-600 transition-colors"
+                      className="text-gray-400 hover:text-blue-600 transition-all duration-200 hover:scale-110"
                     >
                       <Circle className="w-6 h-6" />
                     </button>
@@ -230,7 +230,7 @@ export default function TasksView() {
                   </div>
                   <button
                     onClick={() => handleDeleteTask(task.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -242,7 +242,7 @@ export default function TasksView() {
       </div>
 
       {completedTasks.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md">
+        <div className="bg-white rounded-xl shadow-lg">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-800">Completed Tasks</h3>
           </div>
@@ -251,12 +251,12 @@ export default function TasksView() {
               {completedTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-center justify-between p-4 bg-green-50 rounded-lg border-2 border-green-200"
+                  className="flex items-center justify-between p-4 bg-green-50 rounded-xl border-2 border-green-200 hover:shadow-md transition-all duration-200"
                 >
                   <div className="flex items-center gap-4 flex-1">
                     <button
                       onClick={() => handleToggleStatus(task)}
-                      className="text-green-600 hover:text-gray-400 transition-colors"
+                      className="text-green-600 hover:text-gray-400 transition-all duration-200 hover:scale-110"
                     >
                       <CheckCircle className="w-6 h-6" />
                     </button>
@@ -273,7 +273,7 @@ export default function TasksView() {
                   </div>
                   <button
                     onClick={() => handleDeleteTask(task.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -285,13 +285,13 @@ export default function TasksView() {
       )}
 
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="bg-blue-600 text-white px-6 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl">
               <h2 className="text-xl font-bold">Add New Task</h2>
               <button
                 onClick={() => setShowForm(false)}
-                className="p-1 hover:bg-blue-700 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-blue-800 rounded-lg transition-all duration-200 hover:scale-110"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -305,7 +305,7 @@ export default function TasksView() {
                 <select
                   value={formData.client_id}
                   onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   required
                 >
                   <option value="">Select a client</option>
@@ -324,7 +324,7 @@ export default function TasksView() {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
                   rows={3}
                   placeholder="e.g., Follow up on Paris booking"
                   required
@@ -339,7 +339,7 @@ export default function TasksView() {
                   type="date"
                   value={formData.due_date}
                   onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   required
                 />
               </div>
@@ -347,14 +347,14 @@ export default function TasksView() {
               <div className="flex gap-3 pt-4 border-t">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105"
                 >
                   Create Task
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                  className="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-200 hover:scale-105"
                 >
                   Cancel
                 </button>

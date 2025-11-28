@@ -109,7 +109,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-lg shadow-md p-4">
+      <div className="bg-white rounded-xl shadow-lg p-5">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="lg:col-span-2">
             <div className="relative">
@@ -119,7 +119,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
                 placeholder="Search by name, destination, or country..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               />
             </div>
           </div>
@@ -127,7 +127,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
           >
             <option value="All">All Statuses</option>
             <option value="New Lead">New Lead</option>
@@ -140,7 +140,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
           <select
             value={countryFilter}
             onChange={(e) => setCountryFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
           >
             <option value="All">All Countries</option>
             {uniqueCountries.map(country => (
@@ -151,7 +151,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
           <select
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value as SortOption)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
           >
             <option value="date-new">Newest First</option>
             <option value="date-old">Oldest First</option>
@@ -167,7 +167,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
             {hasActiveFilters && (
               <button
                 onClick={handleClearFilters}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all duration-200 hover:scale-105 shadow-sm"
               >
                 <X className="w-4 h-4" />
                 Clear Filters
@@ -180,7 +180,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
 
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105 font-semibold"
           >
             <Download className="w-4 h-4" />
             Export CSV
@@ -189,7 +189,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
       </div>
 
       {sortedClients.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-12 text-center">
+        <div className="bg-white rounded-xl shadow-lg p-12 text-center">
           <p className="text-gray-500 text-lg">
             {clients.length === 0
               ? 'No clients yet. Add your first client to get started!'
@@ -197,10 +197,10 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-blue-600 text-white">
+              <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Name</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Phone</th>
@@ -213,13 +213,13 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {sortedClients.map((client) => (
-                  <tr key={client.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={client.id} className="hover:bg-blue-50 transition-all duration-200">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{client.name}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{client.phone_number}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{client.destination}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{client.country}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(client.status)}`}>
+                      <span className={`inline-flex px-3 py-1.5 rounded-full text-xs font-semibold border shadow-sm ${getStatusColor(client.status)}`}>
                         {client.status}
                       </span>
                     </td>
@@ -228,21 +228,21 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => onViewNotes(client)}
-                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-110"
                           title="View notes"
                         >
                           <MessageSquare className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => onEdit(client)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110"
                           title="Edit client"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => onDelete(client.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
                           title="Delete client"
                         >
                           <Trash2 className="w-4 h-4" />

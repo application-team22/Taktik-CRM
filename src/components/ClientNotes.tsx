@@ -71,9 +71,9 @@ export default function ClientNotes({ client, onClose }: ClientNotesProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="bg-blue-600 text-white px-6 py-4 flex items-center justify-between">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl">
           <div>
             <h2 className="text-xl font-bold">Notes for {client.name}</h2>
             <p className="text-blue-100 text-sm mt-1">
@@ -82,7 +82,7 @@ export default function ClientNotes({ client, onClose }: ClientNotesProps) {
           </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-blue-700 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-blue-800 rounded-lg transition-all duration-200 hover:scale-110"
           >
             <X className="w-6 h-6" />
           </button>
@@ -97,13 +97,13 @@ export default function ClientNotes({ client, onClose }: ClientNotesProps) {
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               placeholder="Enter your note here..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
               rows={3}
             />
             <button
               onClick={handleAddNote}
               disabled={!newNote.trim() || saving}
-              className="mt-3 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="mt-3 flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105 font-semibold"
             >
               <Plus className="w-4 h-4" />
               {saving ? 'Adding...' : 'Add Note'}
@@ -121,7 +121,7 @@ export default function ClientNotes({ client, onClose }: ClientNotesProps) {
                 <p className="mt-2 text-gray-600">Loading notes...</p>
               </div>
             ) : notes.length === 0 ? (
-              <div className="text-center py-8 bg-gray-50 rounded-lg">
+              <div className="text-center py-8 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200">
                 <p className="text-gray-500">No notes yet. Add your first note above.</p>
               </div>
             ) : (
@@ -129,7 +129,7 @@ export default function ClientNotes({ client, onClose }: ClientNotesProps) {
                 {notes.map((note) => (
                   <div
                     key={note.id}
-                    className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                    className="bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 border border-gray-200 hover:border-blue-300 transition-all duration-200 hover:shadow-md"
                   >
                     <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                       <Clock className="w-4 h-4" />
@@ -146,7 +146,7 @@ export default function ClientNotes({ client, onClose }: ClientNotesProps) {
         <div className="border-t px-6 py-4 bg-gray-50">
           <button
             onClick={onClose}
-            className="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+            className="w-full bg-gray-200 text-gray-800 py-2.5 px-4 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-200 hover:scale-105"
           >
             Close
           </button>

@@ -114,12 +114,12 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
       <Sidebar currentView={view} onNavigate={(newView) => setView(newView as View)} />
 
       <div className="flex-1 ml-64">
         <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-          <div className="px-8 py-4 flex items-center justify-between">
+          <div className="px-8 py-5 flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
                 {view === 'dashboard' && 'Dashboard'}
@@ -127,7 +127,7 @@ function App() {
                 {view === 'tasks' && 'Tasks & Reminders'}
                 {view === 'admin' && 'Admin Panel'}
               </h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-gray-500 mt-1 font-medium">
                 {view === 'dashboard' && 'Welcome to Taktik CRM'}
                 {view === 'clients' && 'Manage your travel agency client database'}
                 {view === 'tasks' && 'Track follow-ups and client tasks'}
@@ -137,7 +137,7 @@ function App() {
             {view === 'clients' && (
               <button
                 onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-md"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 hover:scale-105"
               >
                 <Plus className="w-5 h-5" />
                 Add Client

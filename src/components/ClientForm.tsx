@@ -85,17 +85,17 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-blue-600 text-white px-6 py-4 flex items-center justify-between">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl">
           <h2 className="text-xl font-bold">
             {client ? 'Edit Client' : 'Add New Client'}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-blue-700 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-blue-800 rounded-lg transition-all duration-200 hover:scale-110"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -110,7 +110,7 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                 errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Enter client name"
@@ -128,7 +128,7 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               name="phone_number"
               value={formData.phone_number}
               onChange={handleChange}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                 errors.phone_number ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="+1 (555) 123-4567"
@@ -146,7 +146,7 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               name="destination"
               value={formData.destination}
               onChange={handleChange}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                 errors.destination ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="e.g., Paris, France"
@@ -164,7 +164,7 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               name="country"
               value={formData.country}
               onChange={handleChange}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                 errors.country ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Client's home country"
@@ -181,7 +181,7 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
             >
               {STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>
@@ -205,7 +205,7 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
                 onChange={handleChange}
                 min="0"
                 step="0.01"
-                className={`w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                className={`w-full pl-8 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                   errors.price ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="0.00"
@@ -217,14 +217,14 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
           <div className="flex gap-3 pt-4 border-t">
             <button
               type="submit"
-              className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105"
             >
               {client ? 'Update Client' : 'Add Client'}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+              className="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-200 hover:scale-105"
             >
               Cancel
             </button>
