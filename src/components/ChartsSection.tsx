@@ -54,9 +54,9 @@ export default function ChartsSection({ clients }: ChartsSectionProps) {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-        <h3 className="text-lg font-bold text-gray-800 mb-4">Clients by Status</h3>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+      <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-gray-200">
+        <h3 className="text-base md:text-lg font-bold text-gray-800 mb-3 md:mb-4">Clients by Status</h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={statusData} margin={{ top: 20, right: 30, left: 0, bottom: 60 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -81,8 +81,8 @@ export default function ChartsSection({ clients }: ChartsSectionProps) {
         </ResponsiveContainer>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-        <h3 className="text-lg font-bold text-gray-800 mb-4">Country Distribution</h3>
+      <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-gray-200">
+        <h3 className="text-base md:text-lg font-bold text-gray-800 mb-3 md:mb-4">Country Distribution</h3>
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie
@@ -110,8 +110,8 @@ export default function ChartsSection({ clients }: ChartsSectionProps) {
         </ResponsiveContainer>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 lg:col-span-2">
-        <h3 className="text-lg font-bold text-gray-800 mb-4">Booking Trends</h3>
+      <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-gray-200 lg:col-span-2">
+        <h3 className="text-base md:text-lg font-bold text-gray-800 mb-3 md:mb-4">Booking Trends</h3>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart
             data={bookingTrend}

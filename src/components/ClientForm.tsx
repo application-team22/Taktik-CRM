@@ -87,21 +87,21 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl">
-          <h2 className="text-xl font-bold">
+        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 md:px-6 py-4 md:py-5 flex items-center justify-between rounded-t-2xl">
+          <h2 className="text-lg md:text-xl font-bold">
             {client ? 'Edit Client' : 'Add New Client'}
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-blue-800 rounded-lg transition-all duration-200 hover:scale-110"
+            className="p-1.5 hover:bg-blue-800 rounded-lg transition-all duration-200 hover:scale-110 flex-shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="name" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
               Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -110,16 +110,16 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+              className={`w-full px-4 py-3 md:py-2.5 border rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                 errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Enter client name"
             />
-            {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+            {errors.name && <p className="mt-1 text-xs md:text-sm text-red-600">{errors.name}</p>}
           </div>
 
           <div>
-            <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="phone_number" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
               Phone Number <span className="text-red-500">*</span>
             </label>
             <input
@@ -128,16 +128,16 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               name="phone_number"
               value={formData.phone_number}
               onChange={handleChange}
-              className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+              className={`w-full px-4 py-3 md:py-2.5 border rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                 errors.phone_number ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="+1 (555) 123-4567"
             />
-            {errors.phone_number && <p className="mt-1 text-sm text-red-600">{errors.phone_number}</p>}
+            {errors.phone_number && <p className="mt-1 text-xs md:text-sm text-red-600">{errors.phone_number}</p>}
           </div>
 
           <div>
-            <label htmlFor="destination" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="destination" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
               Destination <span className="text-red-500">*</span>
             </label>
             <input
@@ -146,16 +146,16 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               name="destination"
               value={formData.destination}
               onChange={handleChange}
-              className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+              className={`w-full px-4 py-3 md:py-2.5 border rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                 errors.destination ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="e.g., Paris, France"
             />
-            {errors.destination && <p className="mt-1 text-sm text-red-600">{errors.destination}</p>}
+            {errors.destination && <p className="mt-1 text-xs md:text-sm text-red-600">{errors.destination}</p>}
           </div>
 
           <div>
-            <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="country" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
               Country <span className="text-red-500">*</span>
             </label>
             <input
@@ -164,16 +164,16 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               name="country"
               value={formData.country}
               onChange={handleChange}
-              className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+              className={`w-full px-4 py-3 md:py-2.5 border rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                 errors.country ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Client's home country"
             />
-            {errors.country && <p className="mt-1 text-sm text-red-600">{errors.country}</p>}
+            {errors.country && <p className="mt-1 text-xs md:text-sm text-red-600">{errors.country}</p>}
           </div>
 
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="status" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
               Status <span className="text-red-500">*</span>
             </label>
             <select
@@ -181,7 +181,7 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              className="w-full px-4 py-3 md:py-2.5 border border-gray-300 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
             >
               {STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>
@@ -192,7 +192,7 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
           </div>
 
           <div>
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="price" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
               Price
             </label>
             <div className="relative">
@@ -205,26 +205,26 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
                 onChange={handleChange}
                 min="0"
                 step="0.01"
-                className={`w-full pl-8 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                className={`w-full pl-8 pr-4 py-3 md:py-2.5 border rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                   errors.price ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="0.00"
               />
             </div>
-            {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
+            {errors.price && <p className="mt-1 text-xs md:text-sm text-red-600">{errors.price}</p>}
           </div>
 
-          <div className="flex gap-3 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
             <button
               type="submit"
-              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105"
+              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 md:px-6 rounded-xl font-semibold text-sm md:text-base hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105"
             >
               {client ? 'Update Client' : 'Add Client'}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-200 hover:scale-105"
+              className="flex-1 bg-gray-200 text-gray-800 py-3 px-4 md:px-6 rounded-xl font-semibold text-sm md:text-base hover:bg-gray-300 transition-all duration-200 hover:scale-105"
             >
               Cancel
             </button>

@@ -80,24 +80,24 @@ export default function StatisticsCards({ clients }: StatisticsCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
       {statCards.map((stat) => {
         const isTrendPositive = (stat.trend || 0) >= 0;
 
         return (
           <div
             key={stat.label}
-            className={`bg-gradient-to-br ${stat.color} rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-200 hover:border-blue-300 group`}
+            className={`bg-gradient-to-br ${stat.color} rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-4 md:p-6 border border-gray-200 hover:border-blue-300 group`}
           >
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-3 md:mb-4">
               <div className="flex-1">
-                <p className="text-gray-600 text-sm font-semibold tracking-wide uppercase">{stat.label}</p>
+                <p className="text-gray-600 text-xs md:text-sm font-semibold tracking-wide uppercase">{stat.label}</p>
               </div>
               {stat.icon}
             </div>
 
-            <div className="mb-4">
-              <p className="text-4xl font-bold text-gray-900">{stat.value.toLocaleString()}</p>
+            <div className="mb-3 md:mb-4">
+              <p className="text-3xl md:text-4xl font-bold text-gray-900">{stat.value.toLocaleString()}</p>
             </div>
 
             {stat.trend !== undefined && (

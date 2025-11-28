@@ -23,15 +23,15 @@ export default function ActivityFeed({ clients }: ActivityFeedProps) {
   ).slice(0, 8);
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-      <h3 className="text-lg font-bold text-gray-800 mb-6">Recent Activity</h3>
+    <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-gray-200">
+      <h3 className="text-base md:text-lg font-bold text-gray-800 mb-4 md:mb-6">Recent Activity</h3>
 
-      <div className="space-y-4">
+      <div className="space-y-3 md:space-y-4">
         {sortedActivities.length > 0 ? (
           sortedActivities.map((activity, index) => (
-            <div key={activity.id} className="relative flex gap-4">
+            <div key={activity.id} className="relative flex gap-3 md:gap-4">
               <div className="flex flex-col items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.color} shadow-md`}>
+                <div className={`w-8 md:w-10 h-8 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${activity.color} shadow-md`}>
                   {activity.icon}
                 </div>
                 {index < sortedActivities.length - 1 && (
@@ -39,22 +39,22 @@ export default function ActivityFeed({ clients }: ActivityFeedProps) {
                 )}
               </div>
 
-              <div className="flex-1 pt-1">
-                <div className="flex items-start justify-between mb-1">
-                  <h4 className="font-semibold text-gray-800">{activity.title}</h4>
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
+              <div className="flex-1 pt-1 min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 mb-1">
+                  <h4 className="font-semibold text-gray-800 text-sm md:text-base break-words">{activity.title}</h4>
+                  <span className="text-xs text-gray-500 flex items-center gap-1 flex-shrink-0">
                     <Clock className="w-3 h-3" />
                     {formatTimeAgo(activity.timestamp)}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600">{activity.description}</p>
+                <p className="text-xs md:text-sm text-gray-600">{activity.description}</p>
               </div>
             </div>
           ))
         ) : (
-          <div className="text-center py-8">
-            <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">No activity yet</p>
+          <div className="text-center py-6 md:py-8">
+            <AlertCircle className="w-10 md:w-12 h-10 md:h-12 text-gray-300 mx-auto mb-2 md:mb-3" />
+            <p className="text-gray-500 font-medium text-sm md:text-base">No activity yet</p>
           </div>
         )}
       </div>

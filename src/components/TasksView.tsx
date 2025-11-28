@@ -175,96 +175,96 @@ export default function TasksView() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Tasks & Reminders</h2>
-          <p className="text-gray-600 mt-1">Manage follow-ups and client tasks</p>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900">Tasks & Reminders</h2>
+          <p className="text-xs md:text-sm text-gray-600 mt-1 hidden sm:block">Manage follow-ups and client tasks</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105"
+          className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 md:px-5 py-3 md:py-2.5 rounded-xl font-semibold text-sm md:text-base hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105 w-full sm:w-auto"
         >
           <Plus className="w-5 h-5" />
           Add Task
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 p-6 border-l-4 border-yellow-500">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-6">
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 p-4 md:p-6 border-l-4 border-yellow-500">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm font-medium">Pending Tasks</p>
-              <p className="text-3xl font-bold text-gray-800 mt-2">{pendingTasks.length}</p>
+            <div className="min-w-0">
+              <p className="text-gray-600 text-xs md:text-sm font-medium">Pending Tasks</p>
+              <p className="text-2xl md:text-3xl font-bold text-gray-800 mt-1 md:mt-2">{pendingTasks.length}</p>
             </div>
-            <div className="bg-yellow-100 p-3 rounded-xl shadow-md">
-              <Clock className="w-6 h-6 text-yellow-600" />
+            <div className="bg-yellow-100 p-2 md:p-3 rounded-xl shadow-md flex-shrink-0">
+              <Clock className="w-5 md:w-6 h-5 md:h-6 text-yellow-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 p-6 border-l-4 border-green-500">
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 p-4 md:p-6 border-l-4 border-green-500">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm font-medium">Completed</p>
-              <p className="text-3xl font-bold text-gray-800 mt-2">{completedTasks.length}</p>
+            <div className="min-w-0">
+              <p className="text-gray-600 text-xs md:text-sm font-medium">Completed</p>
+              <p className="text-2xl md:text-3xl font-bold text-gray-800 mt-1 md:mt-2">{completedTasks.length}</p>
             </div>
-            <div className="bg-green-100 p-3 rounded-xl shadow-md">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+            <div className="bg-green-100 p-2 md:p-3 rounded-xl shadow-md flex-shrink-0">
+              <CheckCircle className="w-5 md:w-6 h-5 md:h-6 text-green-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 p-6 border-l-4 border-red-500">
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 p-4 md:p-6 border-l-4 border-red-500">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm font-medium">Overdue</p>
-              <p className="text-3xl font-bold text-gray-800 mt-2">
+            <div className="min-w-0">
+              <p className="text-gray-600 text-xs md:text-sm font-medium">Overdue</p>
+              <p className="text-2xl md:text-3xl font-bold text-gray-800 mt-1 md:mt-2">
                 {pendingTasks.filter((t) => isOverdue(t.due_date, t.status)).length}
               </p>
             </div>
-            <div className="bg-red-100 p-3 rounded-xl shadow-md">
-              <Calendar className="w-6 h-6 text-red-600" />
+            <div className="bg-red-100 p-2 md:p-3 rounded-xl shadow-md flex-shrink-0">
+              <Calendar className="w-5 md:w-6 h-5 md:h-6 text-red-600" />
             </div>
           </div>
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800">Pending Tasks</h3>
+        <div className="px-4 md:px-6 py-4 border-b border-gray-200">
+          <h3 className="text-base md:text-lg font-semibold text-gray-800">Pending Tasks</h3>
         </div>
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {pendingTasks.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-              <p className="text-gray-700 font-medium">No pending tasks</p>
-              <p className="text-gray-500 text-sm mt-1">Great job! Click "Add Task" to create a new task.</p>
+            <div className="text-center py-6 md:py-8 bg-gray-50 rounded-lg">
+              <CheckCircle className="w-10 md:w-12 h-10 md:h-12 text-green-500 mx-auto mb-2 md:mb-3" />
+              <p className="text-gray-700 font-medium text-sm md:text-base">No pending tasks</p>
+              <p className="text-gray-500 text-xs md:text-sm mt-1">Great job! Click "Add Task" to create a new task.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {pendingTasks.map((task) => (
                 <div
                   key={task.id}
-                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 ${
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 md:p-4 rounded-xl border-2 transition-all duration-200 ${
                     isOverdue(task.due_date, task.status)
                       ? 'bg-red-50 border-red-200 shadow-sm'
                       : 'bg-gradient-to-r from-gray-50 to-white border-gray-200 hover:border-blue-300 hover:shadow-md'
                   }`}
                 >
-                  <div className="flex items-center gap-4 flex-1">
+                  <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
                     <button
                       onClick={() => handleToggleStatus(task)}
-                      className="text-gray-400 hover:text-blue-600 transition-all duration-200 hover:scale-110"
+                      className="text-gray-400 hover:text-blue-600 transition-all duration-200 hover:scale-110 flex-shrink-0 mt-1 sm:mt-0"
                     >
-                      <Circle className="w-6 h-6" />
+                      <Circle className="w-5 sm:w-6 h-5 sm:h-6" />
                     </button>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-800">{task.description}</p>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-800 text-sm md:text-base break-words">{task.description}</p>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 text-xs md:text-sm text-gray-600">
                         <span className="font-medium">{getClientName(task.client_id)}</span>
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
+                          <Calendar className="w-4 h-4 flex-shrink-0" />
                           {formatDate(task.due_date)}
                           {isOverdue(task.due_date, task.status) && (
                             <span className="ml-2 text-red-600 font-medium">Overdue</span>
@@ -275,7 +275,7 @@ export default function TasksView() {
                   </div>
                   <button
                     onClick={() => handleDeleteTask(task.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110 flex-shrink-0"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -288,29 +288,29 @@ export default function TasksView() {
 
       {completedTasks.length > 0 && (
         <div className="bg-white rounded-xl shadow-lg">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800">Completed Tasks</h3>
+          <div className="px-4 md:px-6 py-4 border-b border-gray-200">
+            <h3 className="text-base md:text-lg font-semibold text-gray-800">Completed Tasks</h3>
           </div>
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             <div className="space-y-3">
               {completedTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-center justify-between p-4 bg-green-50 rounded-xl border-2 border-green-200 hover:shadow-md transition-all duration-200"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 md:p-4 bg-green-50 rounded-xl border-2 border-green-200 hover:shadow-md transition-all duration-200"
                 >
-                  <div className="flex items-center gap-4 flex-1">
+                  <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
                     <button
                       onClick={() => handleToggleStatus(task)}
-                      className="text-green-600 hover:text-gray-400 transition-all duration-200 hover:scale-110"
+                      className="text-green-600 hover:text-gray-400 transition-all duration-200 hover:scale-110 flex-shrink-0 mt-1 sm:mt-0"
                     >
-                      <CheckCircle className="w-6 h-6" />
+                      <CheckCircle className="w-5 sm:w-6 h-5 sm:h-6" />
                     </button>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-800 line-through">{task.description}</p>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-800 line-through text-sm md:text-base break-words">{task.description}</p>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 text-xs md:text-sm text-gray-600">
                         <span className="font-medium">{getClientName(task.client_id)}</span>
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
+                          <Calendar className="w-4 h-4 flex-shrink-0" />
                           Completed {task.completed_at && formatDate(task.completed_at)}
                         </span>
                       </div>
@@ -318,7 +318,7 @@ export default function TasksView() {
                   </div>
                   <button
                     onClick={() => handleDeleteTask(task.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110 flex-shrink-0"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -331,26 +331,26 @@ export default function TasksView() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl">
-              <h2 className="text-xl font-bold">Add New Task</h2>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 md:px-6 py-4 md:py-5 flex items-center justify-between rounded-t-2xl sticky top-0">
+              <h2 className="text-lg md:text-xl font-bold">Add New Task</h2>
               <button
                 onClick={() => setShowForm(false)}
-                className="p-1.5 hover:bg-blue-800 rounded-lg transition-all duration-200 hover:scale-110"
+                className="p-1.5 hover:bg-blue-800 rounded-lg transition-all duration-200 hover:scale-110 flex-shrink-0"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
                   Client <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formData.client_id}
                   onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 md:py-2.5 border border-gray-300 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   required
                 >
                   <option value="">Select a client</option>
@@ -363,13 +363,13 @@ export default function TasksView() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
                   Task Description <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
+                  className="w-full px-4 py-3 md:py-2.5 border border-gray-300 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
                   rows={3}
                   placeholder="e.g., Follow up on Paris booking"
                   required
@@ -377,29 +377,29 @@ export default function TasksView() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
                   Due Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   value={formData.due_date}
                   onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 md:py-2.5 border border-gray-300 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   required
                 />
               </div>
 
-              <div className="flex gap-3 pt-4 border-t">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105"
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 md:px-6 rounded-xl font-semibold text-sm md:text-base hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105"
                 >
                   Create Task
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-200 hover:scale-105"
+                  className="flex-1 bg-gray-200 text-gray-800 py-3 px-4 md:px-6 rounded-xl font-semibold text-sm md:text-base hover:bg-gray-300 transition-all duration-200 hover:scale-105"
                 >
                   Cancel
                 </button>
