@@ -112,40 +112,73 @@ export default function ImportClients({ language }: ImportClientsProps) {
         return;
       }
 
+      if (lines.length < 2) {
+        setToast({ message: 'File must contain at least a header row and one data row', type: 'error' });
+        setIsProcessing(false);
+        return;
+      }
+
+      const detectDelimiter = (line: string): string => {
+        if (line.includes('\t')) return '\t';
+        if (line.includes(',')) return ',';
+        return ' ';
+      };
+
+      const delimiter = detectDelimiter(lines[0]);
+
+      const parseCSVLine = (line: string, delimiter: string): string[] => {
+        const values: string[] = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === delimiter && !inQuotes) {
+            values.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim());
+        return values;
+      };
+
+      const headers = parseCSVLine(lines[0], delimiter).map(h => h.toLowerCase().replace(/[^a-z0-9_]/g, '_'));
+
       const parsedClients: ParsedClient[] = [];
 
-      for (let i = 0; i < lines.length; i++) {
+      for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
 
-        let values: string[];
-        if (line.includes('\t')) {
-          values = line.split('\t');
-        } else if (line.includes(',')) {
-          values = line.split(',');
-        } else {
-          values = line.split(/\s+/);
-        }
+        const values = parseCSVLine(line, delimiter);
 
-        values = values.map(v => v.trim()).filter(v => v);
+        if (values.length < 4) continue;
 
-        if (values.length >= 4) {
-          parsedClients.push({
-            name: values[0] || 'Unknown',
-            phone_number: values[1] || '',
-            destination: values[2] || '',
-            country: values[3] || '',
-            status: values[4] || 'New Lead',
-            price: parseFloat(values[5]) || 0,
-          });
-        }
+        const row: Record<string, string> = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] || '';
+        });
+
+        parsedClients.push({
+          name: row.name || row.client_name || row.customer_name || 'Unknown',
+          phone_number: row.phone_number || row.phone || row.mobile || row.contact || '',
+          destination: row.destination || row.city || row.location || '',
+          country: row.country || row.nation || '',
+          status: row.status || row.lead_status || 'New Lead',
+          price: parseFloat(row.price || row.amount || row.cost || '0') || 0,
+        });
       }
 
       if (parsedClients.length === 0) {
         setToast({ message: t.import.parseError, type: 'error' });
       } else {
         setParsedData(parsedClients);
-        setToast({ message: `${t.import.parseSuccess} ${parsedClients.length} ${t.import.records}`, type: 'success' });
+        setToast({ message: `Found ${parsedClients.length} clients`, type: 'success' });
       }
     } catch (error) {
       console.error('Error parsing file:', error);
@@ -429,6 +462,13 @@ export default function ImportClients({ language }: ImportClientsProps) {
               <h2 className="text-lg md:text-xl font-bold text-gray-900">{t.import.previewTitle}</h2>
             </div>
             <div className={`flex flex-col sm:flex-row gap-3 ${language === 'AR' ? 'sm:flex-row-reverse' : 'sm:flex-row'}`}>
+              <button
+                onClick={handleReset}
+                className={`flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-200 text-gray-800 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-200 hover:scale-105 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}
+              >
+                <X className="w-5 h-5" />
+                Clear
+              </button>
               {activeTab === 'txt-to-excel' && (
                 <button
                   onClick={handleDownloadExcel}
@@ -452,8 +492,8 @@ export default function ImportClients({ language }: ImportClientsProps) {
           </div>
 
           <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm text-green-800">
-              <strong>{parsedData.length}</strong> {t.import.recordsParsed}
+            <p className="text-sm text-green-800 font-semibold">
+              Found {parsedData.length} clients
             </p>
           </div>
 
@@ -470,7 +510,7 @@ export default function ImportClients({ language }: ImportClientsProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {parsedData.slice(0, 10).map((client, index) => (
+                {parsedData.map((client, index) => (
                   <tr key={index} className="hover:bg-blue-50 transition-colors">
                     <td className="px-4 py-3 text-sm text-gray-900">{client.name}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{client.phone_number}</td>
@@ -483,12 +523,6 @@ export default function ImportClients({ language }: ImportClientsProps) {
               </tbody>
             </table>
           </div>
-
-          {parsedData.length > 10 && (
-            <div className="mt-4 text-center text-sm text-gray-600">
-              {t.import.showingFirst} 10 {t.import.of} {parsedData.length} {t.import.records}
-            </div>
-          )}
         </div>
       )}
 
