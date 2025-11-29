@@ -1,7 +1,9 @@
+import { supabase, User } from './supabase';
+
 export const login = async (email: string, password: string): Promise<User | null> => {
   try {
     console.log('Attempting login with:', { email, password });
-    
+
     const { data: users, error } = await supabase
       .from('users')
       .select('*')
@@ -22,18 +24,38 @@ export const login = async (email: string, password: string): Promise<User | nul
 
     const user = users[0];
     console.log('Login successful:', user);
-    
+
     const userData: User = {
       id: user.id,
       email: user.email,
       full_name: user.full_name,
       role: user.role,
     };
-    
+
     localStorage.setItem('taktik_user', JSON.stringify(userData));
     return userData;
   } catch (error) {
     console.error('Login error:', error);
     throw error;
   }
+};
+
+export const getCurrentUser = (): User | null => {
+  const userStr = localStorage.getItem('taktik_user');
+  if (!userStr) return null;
+
+  try {
+    return JSON.parse(userStr);
+  } catch (error) {
+    console.error('Error parsing user data:', error);
+    return null;
+  }
+};
+
+export const logout = (): void => {
+  localStorage.removeItem('taktik_user');
+};
+
+export const isAdmin = (user: User | null): boolean => {
+  return user?.role === 'admin';
 };
