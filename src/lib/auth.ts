@@ -1,13 +1,12 @@
 import { supabase, User } from './supabase';
-import bcrypt from 'bcryptjs';
 
 export const login = async (email: string, password: string): Promise<User | null> => {
   try {
-    // Fetch user by email
     const { data: users, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
+      .eq('password_hash', password)
       .limit(1);
 
     if (error || !users || users.length === 0) {
@@ -15,15 +14,6 @@ export const login = async (email: string, password: string): Promise<User | nul
     }
 
     const user = users[0];
-
-    // Verify password
-    const isValid = await bcrypt.compare(password, user.password_hash);
-    
-    if (!isValid) {
-      throw new Error('Invalid email or password');
-    }
-
-    // Store session
     const userData: User = {
       id: user.id,
       email: user.email,
@@ -32,7 +22,6 @@ export const login = async (email: string, password: string): Promise<User | nul
     };
     
     localStorage.setItem('taktik_user', JSON.stringify(userData));
-    
     return userData;
   } catch (error) {
     console.error('Login error:', error);
