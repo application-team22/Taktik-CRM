@@ -385,8 +385,8 @@ export default function ImportClients({ language }: ImportClientsProps) {
                 onDrop={handleDrop}
                 className={`border-2 border-dashed rounded-xl p-8 md:p-12 text-center transition-all duration-200 ${
                   isDragging
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50'
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-300 bg-gray-50 hover:border-green-400 hover:bg-green-50'
                 }`}
               >
                 <input
@@ -412,10 +412,10 @@ export default function ImportClients({ language }: ImportClientsProps) {
                     htmlFor="excel-upload"
                     className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg shadow-green-200 hover:shadow-xl hover:scale-105 cursor-pointer"
                   >
-                    Choose File
+                    Choose Excel File
                   </label>
 
-                  <p className="text-xs text-gray-500 mt-2">Accepted formats: .xlsx, .xls files (max 10MB)</p>
+                  <p className="text-xs text-gray-500 mt-2">Accepted formats: .xlsx, .xls (max 10MB)</p>
                 </div>
               </div>
             </>
@@ -545,19 +545,18 @@ export default function ImportClients({ language }: ImportClientsProps) {
               </>
             ) : (
               <>
-                <p className="text-sm text-blue-800 mb-3">Your Excel file should contain the following columns:</p>
-                <div className="bg-white rounded-lg p-4 text-xs text-gray-800">
-                  <p className="font-semibold mb-2">Required columns:</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li>name or Name</li>
-                    <li>phone_number or Phone Number or phone</li>
-                    <li>destination or Destination</li>
-                    <li>country or Country</li>
-                    <li>status or Status</li>
-                    <li>price or Price</li>
-                  </ul>
+                <p className="text-sm text-blue-800 mb-3">Your Excel file must contain these columns:</p>
+                <div className="bg-white rounded-lg p-4 mb-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    <div className="bg-green-50 border border-green-200 rounded p-2 text-xs font-semibold text-green-900">Name</div>
+                    <div className="bg-green-50 border border-green-200 rounded p-2 text-xs font-semibold text-green-900">Phone Number</div>
+                    <div className="bg-green-50 border border-green-200 rounded p-2 text-xs font-semibold text-green-900">Destination</div>
+                    <div className="bg-green-50 border border-green-200 rounded p-2 text-xs font-semibold text-green-900">Country</div>
+                    <div className="bg-green-50 border border-green-200 rounded p-2 text-xs font-semibold text-green-900">Status</div>
+                    <div className="bg-green-50 border border-green-200 rounded p-2 text-xs font-semibold text-green-900">Price</div>
+                  </div>
                 </div>
-                <p className="text-xs text-blue-700 mt-3">The column names are case-insensitive and can use underscores or spaces</p>
+                <p className="text-xs text-blue-700">Column names are case-insensitive. Phone Number can also be: phone_number, phone. Status alternatives: Lead Status. Destination alternatives: city, location.</p>
               </>
             )}
           </div>
