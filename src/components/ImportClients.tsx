@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { Upload, FileText, Download, CheckCircle, AlertCircle, X, Database } from 'lucide-react';
 import { translations } from '../lib/translations';
-import { supabase } from '../lib/supabase';
 import * as XLSX from 'xlsx';
 import Toast from './Toast';
 
@@ -229,6 +228,7 @@ export default function ImportClients({ language }: ImportClientsProps) {
 
     setIsImporting(true);
     try {
+      const { supabase } = await import('../lib/supabase');
       const { error } = await supabase.from('clients').insert(parsedData);
 
       if (error) throw error;
