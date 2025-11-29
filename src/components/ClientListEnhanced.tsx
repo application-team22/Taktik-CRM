@@ -217,11 +217,11 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
             className="px-4 py-3 md:py-2.5 border border-gray-300 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
           >
             <option value="All">{t.filters.allStatuses}</option>
-            <option value="New Lead">New Lead</option>
-            <option value="Contacted">Contacted</option>
-            <option value="Interested">Interested</option>
-            <option value="Not Interested">Not Interested</option>
-            <option value="Booked">Booked</option>
+            <option value="New Lead">{t.statuses.newLead}</option>
+            <option value="Contacted">{t.statuses.contacted}</option>
+            <option value="Interested">{t.statuses.interested}</option>
+            <option value="Not Interested">{t.statuses.notInterested}</option>
+            <option value="Booked">{t.statuses.booked}</option>
           </select>
 
           <select
@@ -240,12 +240,12 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
             onChange={(e) => setSortOption(e.target.value as SortOption)}
             className="px-4 py-3 md:py-2.5 border border-gray-300 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
           >
-            <option value="date-new">Newest First</option>
-            <option value="date-old">Oldest First</option>
-            <option value="name-asc">Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-            <option value="price-high">Price (High to Low)</option>
-            <option value="price-low">Price (Low to High)</option>
+            <option value="date-new">{t.sortOptions.newestFirst}</option>
+            <option value="date-old">{t.sortOptions.oldestFirst}</option>
+            <option value="name-asc">{t.sortOptions.nameAZ}</option>
+            <option value="name-desc">{t.sortOptions.nameZA}</option>
+            <option value="price-high">{t.sortOptions.priceHigh}</option>
+            <option value="price-low">{t.sortOptions.priceLow}</option>
           </select>
         </div>
 
@@ -257,11 +257,11 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
                 className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2 text-xs md:text-sm text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all duration-200 hover:scale-105 shadow-sm w-full sm:w-auto ${language === 'AR' ? 'flex-row-reverse' : ''}`}
               >
                 <X className="w-4 h-4" />
-                {t.actions.filter}
+                {t.common.filterLabel}
               </button>
             )}
             <span className={`text-xs md:text-sm text-gray-600 ${language === 'AR' ? 'text-right' : 'text-left'} sm:text-left`}>
-              {t.pagination.showing} {startIndex + 1}-{Math.min(endIndex, filteredAndSortedClients.length)} {t.pagination.of} {filteredAndSortedClients.length} {t.pagination.clients} {filteredAndSortedClients.length !== clients.length && `(filtered from ${clients.length} total)`}
+              {t.pagination.showing} {startIndex + 1}-{Math.min(endIndex, filteredAndSortedClients.length)} {t.pagination.of} {filteredAndSortedClients.length} {t.pagination.clients} {filteredAndSortedClients.length !== clients.length && `(${t.common.filteredFrom} ${clients.length} ${t.common.total})`}
             </span>
           </div>
 
@@ -285,8 +285,8 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
         <div className="bg-white rounded-xl shadow-lg p-6 md:p-12 text-center">
           <p className="text-gray-500 text-base md:text-lg">
             {clients.length === 0
-              ? 'No clients yet. Add your first client to get started!'
-              : 'No clients match your filters. Try adjusting your search criteria.'}
+              ? t.emptyStates.noClientsMessage
+              : t.emptyStates.noClientsFilter}
           </p>
         </div>
       ) : (
@@ -296,13 +296,13 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
               <table className="w-full">
                 <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Name</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Phone</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Destination</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Country</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Price</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold">Actions</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">{t.fields.name}</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">{t.fields.phoneNumber}</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">{t.fields.destination}</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">{t.fields.country}</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">{t.fields.status}</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">{t.fields.price}</th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold">{t.actions.edit}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">

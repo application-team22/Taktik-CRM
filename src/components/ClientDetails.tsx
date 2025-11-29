@@ -4,6 +4,7 @@ import { Client } from '../types/client';
 import { Note } from '../types/note';
 import { Task } from '../types/task';
 import { supabase } from '../lib/supabase';
+import { translations } from '../lib/translations';
 import Breadcrumb from './Breadcrumb';
 
 interface ClientDetailsProps {
@@ -25,6 +26,7 @@ export default function ClientDetails({
   onAddTask,
   language: _language = 'EN',
 }: ClientDetailsProps) {
+  const t = translations[_language];
   const [notes, setNotes] = useState<Note[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,14 +141,14 @@ export default function ClientDetails({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white border-2 border-gray-200 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Client Information</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-4">{t.clientInfo.title}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                       <Phone className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">Phone Number</p>
+                      <p className="text-xs text-gray-500 font-medium">{t.clientInfo.phoneNumber}</p>
                       <p className="font-semibold text-gray-900">{client.phone_number}</p>
                     </div>
                   </div>
@@ -156,7 +158,7 @@ export default function ClientDetails({
                       <MapPin className="w-5 h-5 text-cyan-600" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">Destination</p>
+                      <p className="text-xs text-gray-500 font-medium">{t.clientInfo.destination}</p>
                       <p className="font-semibold text-gray-900">{client.destination}</p>
                     </div>
                   </div>
@@ -166,7 +168,7 @@ export default function ClientDetails({
                       <Globe className="w-5 h-5 text-green-600" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">Country</p>
+                      <p className="text-xs text-gray-500 font-medium">{t.clientInfo.country}</p>
                       <p className="font-semibold text-gray-900">{client.country}</p>
                     </div>
                   </div>
@@ -176,7 +178,7 @@ export default function ClientDetails({
                       <DollarSign className="w-5 h-5 text-yellow-600" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">Price</p>
+                      <p className="text-xs text-gray-500 font-medium">{t.clientInfo.price}</p>
                       <p className="font-semibold text-gray-900">{formatPrice(client.price)}</p>
                     </div>
                   </div>
@@ -186,7 +188,7 @@ export default function ClientDetails({
                       <Calendar className="w-5 h-5 text-gray-600" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">Created</p>
+                      <p className="text-xs text-gray-500 font-medium">{t.clientInfo.created}</p>
                       <p className="font-semibold text-gray-900">
                         {formatTaskDate(client.created_at)}
                       </p>
@@ -198,7 +200,7 @@ export default function ClientDetails({
                       <Calendar className="w-5 h-5 text-gray-600" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">Last Updated</p>
+                      <p className="text-xs text-gray-500 font-medium">{t.clientInfo.lastUpdated}</p>
                       <p className="font-semibold text-gray-900">
                         {formatTaskDate(client.updated_at)}
                       </p>
@@ -209,13 +211,13 @@ export default function ClientDetails({
 
               <div className="bg-white border-2 border-gray-200 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-gray-800">Notes ({notes.length})</h3>
+                  <h3 className="text-lg font-bold text-gray-800">{t.notes.title} ({notes.length})</h3>
                   <button
                     onClick={onAddNote}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-semibold"
                   >
                     <Plus className="w-4 h-4" />
-                    Add Note
+                    {t.notes.addNote}
                   </button>
                 </div>
 
@@ -226,7 +228,7 @@ export default function ClientDetails({
                 ) : notes.length === 0 ? (
                   <div className="text-center py-8 bg-gray-50 rounded-lg">
                     <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500">No notes yet. Add your first note to track interactions.</p>
+                    <p className="text-gray-500">{t.notes.noNotes}</p>
                   </div>
                 ) : (
                   <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -246,42 +248,42 @@ export default function ClientDetails({
 
             <div className="space-y-6">
               <div className="bg-white border-2 border-gray-200 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Quick Actions</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-4">{t.quickActions.title}</h3>
                 <div className="space-y-3">
                   <button
                     onClick={() => onEdit(client)}
                     className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-all duration-200 font-semibold"
                   >
                     <Edit2 className="w-5 h-5" />
-                    Edit Client
+                    {t.quickActions.editClient}
                   </button>
                   <button
                     onClick={onAddNote}
                     className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-all duration-200 font-semibold"
                   >
                     <MessageSquare className="w-5 h-5" />
-                    Add Note
+                    {t.notes.addNote}
                   </button>
                   <button
                     onClick={onAddTask}
                     className="w-full flex items-center gap-3 px-4 py-3 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-all duration-200 font-semibold"
                   >
                     <CheckSquare className="w-5 h-5" />
-                    Create Task
+                    {t.tasks.createTask}
                   </button>
                   <button
                     onClick={() => onDelete(client.id)}
                     className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-all duration-200 font-semibold"
                   >
                     <Trash2 className="w-5 h-5" />
-                    Delete Client
+                    {t.quickActions.deleteClient}
                   </button>
                 </div>
               </div>
 
               <div className="bg-white border-2 border-gray-200 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-gray-800">Tasks ({tasks.length})</h3>
+                  <h3 className="text-lg font-bold text-gray-800">{t.tasks.title} ({tasks.length})</h3>
                   <button
                     onClick={onAddTask}
                     className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all duration-200"
@@ -297,7 +299,7 @@ export default function ClientDetails({
                 ) : tasks.length === 0 ? (
                   <div className="text-center py-8 bg-gray-50 rounded-lg">
                     <CheckSquare className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500 text-sm">No tasks scheduled for this client.</p>
+                    <p className="text-gray-500 text-sm">{t.emptyStates.noTasksScheduled}</p>
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -338,7 +340,7 @@ export default function ClientDetails({
               onClick={onClose}
               className="px-6 py-3 bg-gray-200 text-gray-800 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-200 hover:scale-105"
             >
-              Close
+              {t.dialog.close}
             </button>
           </div>
         </div>
