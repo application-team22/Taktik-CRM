@@ -7,9 +7,10 @@ import ActivityFeed from './ActivityFeed';
 
 interface DashboardProps {
   clients: Client[];
+  language?: 'EN' | 'AR';
 }
 
-function Dashboard({ clients }: DashboardProps) {
+function Dashboard({ clients, language = 'EN' }: DashboardProps) {
   if (clients.length === 0) {
     return (
       <div className="space-y-8">
@@ -55,7 +56,7 @@ function Dashboard({ clients }: DashboardProps) {
         </div>
       </div>
 
-      <StatisticsCards clients={clients} />
+      <StatisticsCards clients={clients} language={language} />
 
       <ChartsSection clients={clients} />
 

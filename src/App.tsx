@@ -78,14 +78,14 @@ function App() {
           .eq('id', editingClient.id);
 
         if (error) throw error;
-        setToast({ message: 'Client updated successfully!', type: 'success' });
+        setToast({ message: t.messages.clientUpdatedSuccess, type: 'success' });
       } else {
         const { error } = await supabase
           .from('clients')
           .insert([formData]);
 
         if (error) throw error;
-        setToast({ message: 'Client added successfully!', type: 'success' });
+        setToast({ message: t.messages.clientAddedSuccess, type: 'success' });
       }
 
       await fetchClients(true);
@@ -107,7 +107,7 @@ function App() {
     setConfirmDialog({
       show: true,
       title: 'Delete Client',
-      message: `Are you sure you want to delete ${client?.name || 'this client'}? This action cannot be undone.`,
+      message: `${t.messages.confirmDeleteClient} This action cannot be undone.`,
       onConfirm: async () => {
         try {
           const { error } = await supabase
@@ -116,7 +116,7 @@ function App() {
             .eq('id', id);
 
           if (error) throw error;
-          setToast({ message: 'Client deleted successfully!', type: 'success' });
+          setToast({ message: t.messages.clientDeletedSuccess, type: 'success' });
           await fetchClients(true);
           setDetailsClient(null);
         } catch (error) {
@@ -162,18 +162,18 @@ function App() {
     setView('tasks');
   };
 
+  const t = translations[language];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">{t.messages.loading}</p>
         </div>
       </div>
     );
   }
-
-  const t = translations[language];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
@@ -234,7 +234,7 @@ function App() {
               <span className="text-sm font-medium">Updating...</span>
             </div>
           )}
-          {view === 'dashboard' && <Dashboard clients={clients} />}
+          {view === 'dashboard' && <Dashboard clients={clients} language={language} />}
           {view === 'clients' && (
             <ClientListEnhanced
               clients={clients}

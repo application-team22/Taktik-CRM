@@ -59,6 +59,33 @@ export const translations = {
       enterCountry: "Client's home country",
       enterPrice: '0.00',
     },
+    dashboard: {
+      totalClients: 'Total Clients',
+      totalBookings: 'Total Bookings',
+      revenue: 'Revenue',
+      conversionRate: 'Conversion Rate',
+      recentActivity: 'Recent Activity',
+      upcomingTasks: 'Upcoming Tasks',
+    },
+    messages: {
+      clientAddedSuccess: 'Client added successfully!',
+      clientUpdatedSuccess: 'Client updated successfully!',
+      clientDeletedSuccess: 'Client deleted successfully!',
+      confirmDeleteClient: 'Are you sure you want to delete this client?',
+      noClientsFound: 'No clients found',
+      loading: 'Loading...',
+    },
+    pagination: {
+      previous: 'Previous',
+      next: 'Next',
+      showing: 'Showing',
+      of: 'of',
+      clients: 'clients',
+    },
+    filters: {
+      allStatuses: 'All Statuses',
+      allCountries: 'All Countries',
+    },
   },
   AR: {
     branding: {
@@ -119,6 +146,33 @@ export const translations = {
       enterDestination: 'مثال: باريس، فرنسا',
       enterCountry: 'بلد العميل الأصلي',
       enterPrice: '0.00',
+    },
+    dashboard: {
+      totalClients: 'إجمالي العملاء',
+      totalBookings: 'إجمالي الحجوزات',
+      revenue: 'الإيرادات',
+      conversionRate: 'معدل التحويل',
+      recentActivity: 'النشاط الأخير',
+      upcomingTasks: 'المهام القادمة',
+    },
+    messages: {
+      clientAddedSuccess: 'تمت إضافة العميل بنجاح!',
+      clientUpdatedSuccess: 'تم تحديث العميل بنجاح!',
+      clientDeletedSuccess: 'تم حذف العميل بنجاح!',
+      confirmDeleteClient: 'هل أنت متأكد من حذف هذا العميل؟',
+      noClientsFound: 'لا يوجد عملاء',
+      loading: 'جاري التحميل...',
+    },
+    pagination: {
+      previous: 'السابق',
+      next: 'التالي',
+      showing: 'عرض',
+      of: 'من',
+      clients: 'عميل',
+    },
+    filters: {
+      allStatuses: 'جميع الحالات',
+      allCountries: 'جميع البلدان',
     },
   },
 } as const;

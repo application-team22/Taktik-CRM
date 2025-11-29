@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Client } from '../types/client';
+import { translations } from '../lib/translations';
 
 interface StatCard {
   label: string;
@@ -13,9 +14,11 @@ interface StatCard {
 
 interface StatisticsCardsProps {
   clients: Client[];
+  language?: 'EN' | 'AR';
 }
 
-function StatisticsCards({ clients }: StatisticsCardsProps) {
+function StatisticsCards({ clients, language = 'EN' }: StatisticsCardsProps) {
+  const t = translations[language];
   const statCards: StatCard[] = useMemo(() => {
     const totalClients = clients.length;
 
@@ -36,7 +39,7 @@ function StatisticsCards({ clients }: StatisticsCardsProps) {
 
     return [
     {
-      label: 'Total Clients',
+      label: t.dashboard.totalClients,
       value: totalClients,
       icon: (
         <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -47,7 +50,7 @@ function StatisticsCards({ clients }: StatisticsCardsProps) {
       trend: calculateTrend(totalClients),
     },
     {
-      label: 'Booked',
+      label: t.dashboard.totalBookings,
       value: bookedClients,
       icon: (
         <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
@@ -58,7 +61,7 @@ function StatisticsCards({ clients }: StatisticsCardsProps) {
       trend: calculateTrend(bookedClients),
     },
     {
-      label: 'Contacted',
+      label: t.statuses.contacted,
       value: contactedClients,
       icon: (
         <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center">
@@ -69,7 +72,7 @@ function StatisticsCards({ clients }: StatisticsCardsProps) {
       trend: calculateTrend(contactedClients),
     },
     {
-      label: 'Total Revenue',
+      label: t.dashboard.revenue,
       value: Math.round(totalRevenue),
       icon: (
         <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
@@ -80,7 +83,7 @@ function StatisticsCards({ clients }: StatisticsCardsProps) {
       trend: calculateTrend(totalRevenue),
     },
   ];
-  }, [clients]);
+  }, [clients, t]);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">

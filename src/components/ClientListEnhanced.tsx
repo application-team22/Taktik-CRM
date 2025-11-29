@@ -216,7 +216,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-3 md:py-2.5 border border-gray-300 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
           >
-            <option value="All">All Statuses</option>
+            <option value="All">{t.filters.allStatuses}</option>
             <option value="New Lead">New Lead</option>
             <option value="Contacted">Contacted</option>
             <option value="Interested">Interested</option>
@@ -229,7 +229,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
             onChange={(e) => setCountryFilter(e.target.value)}
             className="px-4 py-3 md:py-2.5 border border-gray-300 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
           >
-            <option value="All">All Countries</option>
+            <option value="All">{t.filters.allCountries}</option>
             {uniqueCountries.map(country => (
               <option key={country} value={country}>{country}</option>
             ))}
@@ -261,7 +261,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
               </button>
             )}
             <span className="text-xs md:text-sm text-gray-600 text-center sm:text-left">
-              Showing {startIndex + 1}-{Math.min(endIndex, filteredAndSortedClients.length)} of {filteredAndSortedClients.length} {filteredAndSortedClients.length !== clients.length && `(filtered from ${clients.length} total)`}
+              {t.pagination.showing} {startIndex + 1}-{Math.min(endIndex, filteredAndSortedClients.length)} {t.pagination.of} {filteredAndSortedClients.length} {t.pagination.clients} {filteredAndSortedClients.length !== clients.length && `(filtered from ${clients.length} total)`}
             </span>
           </div>
 
@@ -279,7 +279,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
       {isSearching ? (
         <div className="bg-white rounded-xl shadow-lg p-12 text-center">
           <Loader2 className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-spin" />
-          <p className="text-gray-600 text-lg">Searching...</p>
+          <p className="text-gray-600 text-lg">{t.messages.loading}</p>
         </div>
       ) : filteredAndSortedClients.length === 0 ? (
         <div className="bg-white rounded-xl shadow-lg p-6 md:p-12 text-center">
@@ -475,7 +475,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
                   className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 w-full sm:w-auto"
                 >
                   <ChevronLeft className="w-5 h-5" />
-                  Previous
+                  {t.pagination.previous}
                 </button>
 
                 <div className="flex items-center gap-2 flex-wrap justify-center">
@@ -505,7 +505,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
                   disabled={currentPage === totalPages}
                   className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 w-full sm:w-auto"
                 >
-                  Next
+                  {t.pagination.next}
                   <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
