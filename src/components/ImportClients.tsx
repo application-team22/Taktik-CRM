@@ -17,9 +17,21 @@ interface ParsedClient {
   price: number;
 }
 
+interface ValidationError {
+  field: string;
+  message: string;
+}
+
+interface ValidatedClient extends ParsedClient {
+  rowIndex: number;
+  isValid: boolean;
+  errors: ValidationError[];
+}
+
 type TabType = 'txt-to-excel' | 'excel-to-db';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const VALID_STATUSES = ['New Lead', 'Contacted', 'Interested', 'Not Interested', 'Booked'];
 
 export default function ImportClients({ language }: ImportClientsProps) {
   const t = translations[language];
@@ -27,6 +39,7 @@ export default function ImportClients({ language }: ImportClientsProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedClient[]>([]);
+  const [validatedData, setValidatedData] = useState<ValidatedClient[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -98,6 +111,42 @@ export default function ImportClients({ language }: ImportClientsProps) {
         setToast({ message: `Please upload a valid Excel file`, type: 'error' });
       }
     }
+  };
+
+  const validateClientData = (clients: ParsedClient[]): ValidatedClient[] => {
+    return clients.map((client, index) => {
+      const errors: ValidationError[] = [];
+
+      if (!client.name || client.name.trim() === '' || client.name === 'Unknown') {
+        errors.push({ field: 'name', message: 'Name is required' });
+      }
+
+      if (!client.phone_number || client.phone_number.trim() === '') {
+        errors.push({ field: 'phone_number', message: 'Phone number is required' });
+      }
+
+      if (!client.country || client.country.trim() === '') {
+        errors.push({ field: 'country', message: 'Country is required' });
+      }
+
+      if (!VALID_STATUSES.includes(client.status)) {
+        errors.push({
+          field: 'status',
+          message: `Status must be one of: ${VALID_STATUSES.join(', ')}`
+        });
+      }
+
+      if (isNaN(client.price) || client.price < 0) {
+        errors.push({ field: 'price', message: 'Price must be a valid positive number' });
+      }
+
+      return {
+        ...client,
+        rowIndex: index + 1,
+        isValid: errors.length === 0,
+        errors,
+      };
+    });
   };
 
   const parseTextFile = async (file: File) => {
@@ -178,7 +227,10 @@ export default function ImportClients({ language }: ImportClientsProps) {
         setToast({ message: t.import.parseError, type: 'error' });
       } else {
         setParsedData(parsedClients);
-        setToast({ message: `Found ${parsedClients.length} clients`, type: 'success' });
+        const validated = validateClientData(parsedClients);
+        setValidatedData(validated);
+        const validCount = validated.filter(c => c.isValid).length;
+        setToast({ message: `Found ${parsedClients.length} clients (${validCount} valid)`, type: 'success' });
       }
     } catch (error) {
       console.error('Error parsing file:', error);
@@ -225,6 +277,27 @@ export default function ImportClients({ language }: ImportClientsProps) {
         return;
       }
 
+      const firstRow: any = jsonData[0];
+      const headers = Object.keys(firstRow).map(h => h.toLowerCase());
+
+      const hasNameColumn = headers.some(h => h.includes('name'));
+      const hasPhoneColumn = headers.some(h => h.includes('phone'));
+      const hasCountryColumn = headers.some(h => h.includes('country'));
+
+      if (!hasNameColumn || !hasPhoneColumn || !hasCountryColumn) {
+        const missingColumns = [];
+        if (!hasNameColumn) missingColumns.push('Name');
+        if (!hasPhoneColumn) missingColumns.push('Phone Number');
+        if (!hasCountryColumn) missingColumns.push('Country');
+
+        setToast({
+          message: `Missing required columns: ${missingColumns.join(', ')}. Please check your Excel file format.`,
+          type: 'error'
+        });
+        setIsProcessing(false);
+        return;
+      }
+
       const parsedClients: ParsedClient[] = [];
 
       for (const row of jsonData) {
@@ -243,7 +316,10 @@ export default function ImportClients({ language }: ImportClientsProps) {
         setToast({ message: t.import.parseError, type: 'error' });
       } else {
         setParsedData(parsedClients);
-        setToast({ message: `${t.import.parseSuccess} ${parsedClients.length} ${t.import.records}`, type: 'success' });
+        const validated = validateClientData(parsedClients);
+        setValidatedData(validated);
+        const validCount = validated.filter(c => c.isValid).length;
+        setToast({ message: `${t.import.parseSuccess} ${parsedClients.length} ${t.import.records} (${validCount} valid)`, type: 'success' });
       }
     } catch (error) {
       console.error('Error parsing Excel file:', error);
@@ -259,15 +335,32 @@ export default function ImportClients({ language }: ImportClientsProps) {
       return;
     }
 
+    const validClients = validatedData.filter(c => c.isValid);
+
+    if (validClients.length === 0) {
+      setToast({ message: 'No valid clients to import. Please fix the errors first.', type: 'error' });
+      return;
+    }
+
+    const invalidCount = validatedData.length - validClients.length;
+    if (invalidCount > 0) {
+      const confirmed = window.confirm(
+        `Warning: ${invalidCount} row(s) contain errors and will be skipped. Only ${validClients.length} valid client(s) will be imported. Continue?`
+      );
+      if (!confirmed) return;
+    }
+
     setIsImporting(true);
     try {
       const { supabase } = await import('../lib/supabase');
-      const { error } = await supabase.from('clients').insert(parsedData);
+      const clientsToInsert = validClients.map(({ rowIndex, isValid, errors, ...client }) => client);
+      const { error } = await supabase.from('clients').insert(clientsToInsert);
 
       if (error) throw error;
 
-      setToast({ message: `Successfully imported ${parsedData.length} clients to database!`, type: 'success' });
+      setToast({ message: `Successfully imported ${validClients.length} clients to database!`, type: 'success' });
       setParsedData([]);
+      setValidatedData([]);
       setFile(null);
       if (excelInputRef.current) {
         excelInputRef.current.value = '';
@@ -283,6 +376,7 @@ export default function ImportClients({ language }: ImportClientsProps) {
   const handleReset = () => {
     setFile(null);
     setParsedData([]);
+    setValidatedData([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -454,77 +548,142 @@ export default function ImportClients({ language }: ImportClientsProps) {
         </div>
       )}
 
-      {parsedData.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-          <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 ${language === 'AR' ? 'sm:flex-row-reverse' : 'sm:flex-row'}`}>
-            <div className={`flex items-center gap-3 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}>
-              <CheckCircle className="w-6 h-6 text-green-600" />
-              <h2 className="text-lg md:text-xl font-bold text-gray-900">{t.import.previewTitle}</h2>
-            </div>
-            <div className={`flex flex-col sm:flex-row gap-3 ${language === 'AR' ? 'sm:flex-row-reverse' : 'sm:flex-row'}`}>
-              <button
-                onClick={handleReset}
-                className={`flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-200 text-gray-800 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-200 hover:scale-105 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}
-              >
-                <X className="w-5 h-5" />
-                Clear
-              </button>
-              {activeTab === 'txt-to-excel' && (
-                <button
-                  onClick={handleDownloadExcel}
-                  className={`flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg shadow-green-200 hover:shadow-xl hover:scale-105 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}
-                >
-                  <Download className="w-5 h-5" />
-                  {t.import.downloadExcel}
-                </button>
-              )}
-              {activeTab === 'excel-to-db' && (
-                <button
-                  onClick={handleImportToDatabase}
-                  disabled={isImporting}
-                  className={`flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}
-                >
-                  <Database className="w-5 h-5" />
-                  {isImporting ? 'Importing...' : 'Import to Database'}
-                </button>
-              )}
-            </div>
-          </div>
+      {parsedData.length > 0 && validatedData.length > 0 && (() => {
+        const validCount = validatedData.filter(c => c.isValid).length;
+        const errorCount = validatedData.length - validCount;
+        const getCellClass = (client: ValidatedClient, field: string) => {
+          const hasError = client.errors.some(e => e.field === field);
+          if (hasError) return 'bg-red-50 text-red-900 border-l-4 border-red-500';
+          if (client.isValid) return 'bg-green-50 text-green-900';
+          return 'text-gray-900';
+        };
 
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm text-green-800 font-semibold">
-              Found {parsedData.length} clients
-            </p>
-          </div>
+        return (
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+            <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 ${language === 'AR' ? 'sm:flex-row-reverse' : 'sm:flex-row'}`}>
+              <div className={`flex items-center gap-3 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}>
+                {errorCount > 0 ? (
+                  <AlertCircle className="w-6 h-6 text-yellow-600" />
+                ) : (
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                )}
+                <h2 className="text-lg md:text-xl font-bold text-gray-900">{t.import.previewTitle}</h2>
+              </div>
+              <div className={`flex flex-col sm:flex-row gap-3 ${language === 'AR' ? 'sm:flex-row-reverse' : 'sm:flex-row'}`}>
+                <button
+                  onClick={handleReset}
+                  className={`flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-200 text-gray-800 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-200 hover:scale-105 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}
+                >
+                  <X className="w-5 h-5" />
+                  Clear
+                </button>
+                {activeTab === 'txt-to-excel' && (
+                  <button
+                    onClick={handleDownloadExcel}
+                    className={`flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg shadow-green-200 hover:shadow-xl hover:scale-105 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}
+                  >
+                    <Download className="w-5 h-5" />
+                    {t.import.downloadExcel}
+                  </button>
+                )}
+                {activeTab === 'excel-to-db' && (
+                  <button
+                    onClick={handleImportToDatabase}
+                    disabled={isImporting || validCount === 0}
+                    className={`flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}
+                  >
+                    <Database className="w-5 h-5" />
+                    {isImporting ? 'Importing...' : `Import ${validCount} Valid Client${validCount !== 1 ? 's' : ''}`}
+                  </button>
+                )}
+              </div>
+            </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">{t.fields.name}</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">{t.fields.phoneNumber}</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">{t.fields.destination}</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">{t.fields.country}</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">{t.fields.status}</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">{t.fields.price}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {parsedData.map((client, index) => (
-                  <tr key={index} className="hover:bg-blue-50 transition-colors">
-                    <td className="px-4 py-3 text-sm text-gray-900">{client.name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{client.phone_number}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{client.destination}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{client.country}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{client.status}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-900">${client.price}</td>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-600 font-medium mb-1">Total</p>
+                <p className="text-2xl font-bold text-blue-900">{validatedData.length}</p>
+              </div>
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-600 font-medium mb-1">Valid</p>
+                <p className="text-2xl font-bold text-green-900">{validCount}</p>
+              </div>
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600 font-medium mb-1">Errors</p>
+                <p className="text-2xl font-bold text-red-900">{errorCount}</p>
+              </div>
+            </div>
+
+            {errorCount > 0 && (
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800 font-semibold mb-2">
+                  Found {errorCount} row(s) with validation errors
+                </p>
+                <p className="text-xs text-yellow-700">
+                  Rows with errors are highlighted in red. Hover over cells to see error details.
+                </p>
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">Row</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">Status</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">{t.fields.name}</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">{t.fields.phoneNumber}</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">{t.fields.destination}</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">{t.fields.country}</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">{t.fields.status}</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">{t.fields.price}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {validatedData.map((client) => (
+                    <tr key={client.rowIndex} className={client.isValid ? 'hover:bg-green-50' : 'hover:bg-red-50'}>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-700">{client.rowIndex}</td>
+                      <td className="px-4 py-3">
+                        {client.isValid ? (
+                          <CheckCircle className="w-5 h-5 text-green-600" />
+                        ) : (
+                          <div className="relative group">
+                            <AlertCircle className="w-5 h-5 text-red-600 cursor-help" />
+                            <div className="absolute left-0 top-6 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                              <p className="font-semibold mb-2">Validation Errors:</p>
+                              {client.errors.map((err, idx) => (
+                                <p key={idx} className="mb-1">• {err.field}: {err.message}</p>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                      <td className={`px-4 py-3 text-sm ${getCellClass(client, 'name')}`}>
+                        {client.name || '(empty)'}
+                      </td>
+                      <td className={`px-4 py-3 text-sm ${getCellClass(client, 'phone_number')}`}>
+                        {client.phone_number || '(empty)'}
+                      </td>
+                      <td className={`px-4 py-3 text-sm ${getCellClass(client, 'destination')}`}>
+                        {client.destination || '(empty)'}
+                      </td>
+                      <td className={`px-4 py-3 text-sm ${getCellClass(client, 'country')}`}>
+                        {client.country || '(empty)'}
+                      </td>
+                      <td className={`px-4 py-3 text-sm ${getCellClass(client, 'status')}`}>
+                        {client.status}
+                      </td>
+                      <td className={`px-4 py-3 text-sm font-semibold ${getCellClass(client, 'price')}`}>
+                        ${client.price}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
         <div className={`flex items-start gap-3 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}>
