@@ -196,7 +196,7 @@ export default function ImportClients({ language }: ImportClientsProps) {
 
     const worksheet = XLSX.utils.json_to_sheet(parsedData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Clients');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Taktik Clients');
 
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
