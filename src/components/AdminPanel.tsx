@@ -3,6 +3,7 @@ import { Users, Settings, BarChart3, DollarSign, TrendingUp, UserCheck } from 'l
 import { Client } from '../types/client';
 import { Task } from '../types/task';
 import { supabase } from '../lib/supabase';
+import AgentManagement from './AgentManagement';
 
 interface AdminPanelProps {
   clients: Client[];
@@ -244,67 +245,7 @@ export default function AdminPanel({ clients, language: _language = 'EN' }: Admi
             </div>
           )}
 
-          {activeView === 'users' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">User Management</h3>
-                <p className="text-gray-600 mb-6">Manage system users and permissions</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-                        <Users className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">Admin User</p>
-                        <p className="text-sm text-gray-600">Full Access</p>
-                      </div>
-                    </div>
-                    <span className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-full">
-                      Active
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <p>Email: admin@taktikcrm.com</p>
-                    <p className="mt-1">Role: System Administrator</p>
-                  </div>
-                </div>
-
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="border-2 border-gray-200 bg-gray-50 rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                          <Users className="w-6 h-6 text-gray-500" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">Agent {i}</p>
-                          <p className="text-sm text-gray-600">Sales Agent</p>
-                        </div>
-                      </div>
-                      <span className="px-3 py-1 bg-gray-300 text-gray-700 text-xs font-medium rounded-full">
-                        Available
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      <p>Slot available for new agent</p>
-                      <p className="mt-1">Role: Sales Agent</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  User management features will be available in a future update. Contact your system
-                  administrator to add or modify user accounts.
-                </p>
-              </div>
-            </div>
-          )}
+          {activeView === 'users' && <AgentManagement language={_language} />}
 
           {activeView === 'settings' && (
             <div className="space-y-6">
