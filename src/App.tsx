@@ -251,7 +251,15 @@ function App() {
             />
           )}
           {view === 'tasks' && <TasksView language={language} />}
-          {view === 'import' && <ImportClients language={language} />}
+          {view === 'import' && (
+            <ImportClients
+              language={language}
+              onNavigateToClients={() => {
+                setView('clients');
+                fetchClients(true);
+              }}
+            />
+          )}
           {view === 'admin' && <AdminPanel clients={clients} language={language} />}
         </main>
       </div>

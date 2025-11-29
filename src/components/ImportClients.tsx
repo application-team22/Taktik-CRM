@@ -1,11 +1,13 @@
 import { useState, useRef } from 'react';
-import { Upload, FileText, Download, CheckCircle, AlertCircle, X, Database } from 'lucide-react';
+import { Upload, FileText, Download, CheckCircle, AlertCircle, X, Database, ArrowRight } from 'lucide-react';
 import { translations } from '../lib/translations';
 import * as XLSX from 'xlsx';
 import Toast from './Toast';
+import ConfirmDialog from './ConfirmDialog';
 
 interface ImportClientsProps {
   language: 'EN' | 'AR';
+  onNavigateToClients?: () => void;
 }
 
 interface ParsedClient {
@@ -33,7 +35,7 @@ type TabType = 'txt-to-excel' | 'excel-to-db';
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const VALID_STATUSES = ['New Lead', 'Contacted', 'Interested', 'Not Interested', 'Booked'];
 
-export default function ImportClients({ language }: ImportClientsProps) {
+export default function ImportClients({ language, onNavigateToClients }: ImportClientsProps) {
   const t = translations[language];
   const [activeTab, setActiveTab] = useState<TabType>('txt-to-excel');
   const [file, setFile] = useState<File | null>(null);
@@ -42,7 +44,20 @@ export default function ImportClients({ language }: ImportClientsProps) {
   const [validatedData, setValidatedData] = useState<ValidatedClient[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+  const [successDialog, setSuccessDialog] = useState<{
+    show: boolean;
+    imported: number;
+    failed: number;
+    errors?: string[];
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const excelInputRef = useRef<HTMLInputElement>(null);
 
@@ -329,7 +344,7 @@ export default function ImportClients({ language }: ImportClientsProps) {
     }
   };
 
-  const handleImportToDatabase = async () => {
+  const handleImportToDatabase = () => {
     if (parsedData.length === 0) {
       setToast({ message: 'No data to import', type: 'error' });
       return;
@@ -343,33 +358,77 @@ export default function ImportClients({ language }: ImportClientsProps) {
     }
 
     const invalidCount = validatedData.length - validClients.length;
-    if (invalidCount > 0) {
-      const confirmed = window.confirm(
-        `Warning: ${invalidCount} row(s) contain errors and will be skipped. Only ${validClients.length} valid client(s) will be imported. Continue?`
-      );
-      if (!confirmed) return;
-    }
 
+    setConfirmDialog({
+      show: true,
+      title: 'Import Clients to Database',
+      message: invalidCount > 0
+        ? `Import ${validClients.length} valid client${validClients.length !== 1 ? 's' : ''} to database?\n\nWarning: ${invalidCount} row(s) contain errors and will be skipped.`
+        : `Import ${validClients.length} client${validClients.length !== 1 ? 's' : ''} to database?\n\nThis will add all validated clients to your database.`,
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        await performImport(validClients);
+      },
+    });
+  };
+
+  const performImport = async (validClients: ValidatedClient[]) => {
     setIsImporting(true);
+    setImportProgress(0);
+
     try {
       const { supabase } = await import('../lib/supabase');
       const clientsToInsert = validClients.map(({ rowIndex, isValid, errors, ...client }) => client);
-      const { error } = await supabase.from('clients').insert(clientsToInsert);
 
-      if (error) throw error;
+      const batchSize = 50;
+      let successCount = 0;
+      let failedCount = 0;
+      const errors: string[] = [];
 
-      setToast({ message: `Successfully imported ${validClients.length} clients to database!`, type: 'success' });
-      setParsedData([]);
-      setValidatedData([]);
-      setFile(null);
-      if (excelInputRef.current) {
-        excelInputRef.current.value = '';
+      for (let i = 0; i < clientsToInsert.length; i += batchSize) {
+        const batch = clientsToInsert.slice(i, i + batchSize);
+
+        try {
+          const { error } = await supabase.from('clients').insert(batch);
+
+          if (error) {
+            failedCount += batch.length;
+            errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
+          } else {
+            successCount += batch.length;
+          }
+        } catch (err: any) {
+          failedCount += batch.length;
+          errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${err.message || 'Unknown error'}`);
+        }
+
+        setImportProgress(Math.round(((i + batch.length) / clientsToInsert.length) * 100));
+      }
+
+      setSuccessDialog({
+        show: true,
+        imported: successCount,
+        failed: failedCount,
+        errors: failedCount > 0 ? errors : undefined,
+      });
+
+      if (successCount > 0) {
+        setParsedData([]);
+        setValidatedData([]);
+        setFile(null);
+        if (excelInputRef.current) {
+          excelInputRef.current.value = '';
+        }
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
     } catch (error) {
       console.error('Error importing to database:', error);
       setToast({ message: 'Failed to import clients to database. Please try again.', type: 'error' });
     } finally {
       setIsImporting(false);
+      setImportProgress(0);
     }
   };
 
@@ -721,6 +780,110 @@ export default function ImportClients({ language }: ImportClientsProps) {
           </div>
         </div>
       </div>
+
+      {isImporting && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Database className="w-8 h-8 text-blue-600 animate-pulse" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Importing Clients...</h3>
+              <p className="text-gray-600 mb-4">Please wait while we add clients to your database</p>
+
+              <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+                <div
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 h-3 rounded-full transition-all duration-300"
+                  style={{ width: `${importProgress}%` }}
+                />
+              </div>
+              <p className="text-sm font-semibold text-blue-600">{importProgress}%</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {successDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
+            <div className="text-center">
+              {successDialog.failed === 0 ? (
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+              ) : (
+                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8 text-yellow-600" />
+                </div>
+              )}
+
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                {successDialog.failed === 0 ? 'Import Successful!' : 'Import Completed with Warnings'}
+              </h3>
+
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-green-600">{successDialog.imported}</p>
+                    <p className="text-sm text-gray-600 mt-1">Imported</p>
+                  </div>
+                  {successDialog.failed > 0 && (
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-red-600">{successDialog.failed}</p>
+                      <p className="text-sm text-gray-600 mt-1">Failed</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {successDialog.errors && successDialog.errors.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-left">
+                  <p className="text-sm font-semibold text-red-800 mb-2">Error Details:</p>
+                  <div className="max-h-32 overflow-y-auto">
+                    {successDialog.errors.map((error, idx) => (
+                      <p key={idx} className="text-xs text-red-700 mb-1">• {error}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                {onNavigateToClients && (
+                  <button
+                    onClick={() => {
+                      setSuccessDialog(null);
+                      onNavigateToClients();
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105"
+                  >
+                    View Clients
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => setSuccessDialog(null)}
+                  className="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-200 hover:scale-105"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmText="Yes, Import"
+          cancelText="Cancel"
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+          type="warning"
+          language={language}
+        />
+      )}
 
       {toast && (
         <Toast
