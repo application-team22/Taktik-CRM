@@ -10,13 +10,14 @@ import ClientListEnhanced from './components/ClientListEnhanced';
 import ClientForm from './components/ClientForm';
 import ClientNotes from './components/ClientNotes';
 import TasksView from './components/TasksView';
+import ImportClients from './components/ImportClients';
 import AdminPanel from './components/AdminPanel';
 import ClientDetails from './components/ClientDetails';
 import Toast from './components/Toast';
 import ConfirmDialog from './components/ConfirmDialog';
 import LanguageSwitcher from './components/LanguageSwitcher';
 
-type View = 'dashboard' | 'clients' | 'tasks' | 'admin';
+type View = 'dashboard' | 'clients' | 'tasks' | 'import' | 'admin';
 
 function App() {
   const [language, setLanguage] = useState<'EN' | 'AR'>(() => {
@@ -205,12 +206,14 @@ function App() {
                 {view === 'dashboard' && t.header.dashboardTitle}
                 {view === 'clients' && t.header.clientsTitle}
                 {view === 'tasks' && t.header.tasksTitle}
+                {view === 'import' && t.header.importTitle}
                 {view === 'admin' && t.header.adminTitle}
               </h1>
               <p className="text-xs md:text-sm text-gray-500 mt-1 font-medium hidden sm:block">
                 {view === 'dashboard' && t.header.dashboardSubtitle}
                 {view === 'clients' && t.header.clientsSubtitle}
                 {view === 'tasks' && t.header.tasksSubtitle}
+                {view === 'import' && t.header.importSubtitle}
                 {view === 'admin' && t.header.adminSubtitle}
               </p>
             </div>
@@ -248,6 +251,7 @@ function App() {
             />
           )}
           {view === 'tasks' && <TasksView language={language} />}
+          {view === 'import' && <ImportClients language={language} />}
           {view === 'admin' && <AdminPanel clients={clients} language={language} />}
         </main>
       </div>

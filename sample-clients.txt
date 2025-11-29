@@ -1,0 +1,10 @@
+John Doe, +1234567890, Paris, USA, Interested, 1500
+Jane Smith, +0987654321, London, Canada, New Lead, 2000
+Ahmed Hassan, +9665551234, Dubai, Saudi Arabia, Booked, 3500
+Maria Garcia, +34611223344, Barcelona, Spain, Contacted, 1800
+Liu Wei, +8613912345678, Tokyo, China, Interested, 2200
+Sarah Johnson, +14165551234, Rome, USA, Booked, 2800
+Mohammed Ali, +9715551234, Cairo, UAE, New Lead, 1600
+Elena Petrov, +79161234567, Moscow, Russia, Contacted, 2400
+Carlos Rodriguez, +5215551234, Cancun, Mexico, Interested, 1900
+Emma Wilson, +442071234567, Athens, UK, Booked, 3100

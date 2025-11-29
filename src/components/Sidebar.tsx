@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, CheckSquare, Settings, X } from 'lucide-react';
+import { LayoutDashboard, Users, CheckSquare, Settings, X, Upload } from 'lucide-react';
 import { translations } from '../lib/translations';
 
 interface SidebarProps {
@@ -16,6 +16,7 @@ export default function Sidebar({ currentView, onNavigate, isOpen, onClose, lang
     { id: 'dashboard', label: t.navigation.dashboard, icon: LayoutDashboard },
     { id: 'clients', label: t.navigation.clients, icon: Users },
     { id: 'tasks', label: t.navigation.tasks, icon: CheckSquare },
+    { id: 'import', label: t.navigation.import, icon: Upload },
     { id: 'admin', label: t.navigation.admin, icon: Settings },
   ];
 
