@@ -30,12 +30,14 @@ export default function Sidebar({ currentView, onNavigate, isOpen, onClose, lang
       )}
 
       <div
-        className={`bg-gradient-to-b from-slate-50 to-white h-screen w-64 border-r border-gray-200 fixed left-0 top-0 shadow-lg z-50 transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0`}
+        className={`bg-gradient-to-b from-slate-50 to-white h-screen w-64 fixed top-0 shadow-lg z-50 transition-transform duration-300 ease-in-out ${
+          language === 'AR'
+            ? `border-l border-gray-200 right-0 ${isOpen ? 'translate-x-0' : 'translate-x-full'} md:translate-x-0 animate-slide-in-rtl`
+            : `border-r border-gray-200 left-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 animate-slide-in`
+        }`}
       >
-        <div className="p-6 border-b border-gray-200 bg-white flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className={`p-6 border-b border-gray-200 bg-white flex items-center justify-between ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}>
+          <div className={`flex items-center gap-3 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}>
             <img
               src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRXbGugbzv4HWLxhujILeIK99Vc7BtVSsA7Cw&s"
               alt="Taktik Travel Logo"
@@ -65,13 +67,13 @@ export default function Sidebar({ currentView, onNavigate, isOpen, onClose, lang
                 <li key={item.id}>
                   <button
                     onClick={() => onNavigate(item.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'} ${
                       isActive
                         ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-200 transform scale-105'
                         : 'text-gray-700 hover:bg-white hover:shadow-md hover:scale-102'
                     }`}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-5 h-5 flex-shrink-0" />
                     <span>{item.label}</span>
                   </button>
                 </li>

@@ -8,6 +8,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   type?: 'danger' | 'warning';
+  language?: 'EN' | 'AR';
 }
 
 export default function ConfirmDialog({
@@ -18,9 +19,10 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
   type = 'danger',
+  language = 'EN',
 }: ConfirmDialogProps) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm" dir={language === 'AR' ? 'rtl' : 'ltr'}>
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
         <div className="p-6">
           <div className="flex items-center gap-4 mb-4">

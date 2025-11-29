@@ -6,7 +6,11 @@ import { Client } from '../types/client';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
 
-export default function TasksView() {
+interface TasksViewProps {
+  language?: 'EN' | 'AR';
+}
+
+export default function TasksView({ language: _language = 'EN' }: TasksViewProps = {}) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);

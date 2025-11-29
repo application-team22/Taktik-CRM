@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,6 +15,42 @@
   }
 }
 
+@keyframes slide-in-rtl {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
+}
+
+.animate-slide-in-rtl {
+  animation: slide-in-rtl 0.3s ease-out;
+}
+
+html[dir="rtl"] {
+  direction: rtl;
+  font-family: 'Cairo', sans-serif;
+}
+
+html[dir="ltr"] {
+  direction: ltr;
+}
+
+html[dir="rtl"] *,
+html[dir="rtl"] *::before,
+html[dir="rtl"] *::after {
+  --tw-translate-x: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html[dir="rtl"] .transition-transform {
+    transition-property: transform, --tw-transform;
+  }
 }

@@ -13,6 +13,7 @@ interface ClientDetailsProps {
   onDelete: (id: string) => void;
   onAddNote: () => void;
   onAddTask: () => void;
+  language?: 'EN' | 'AR';
 }
 
 export default function ClientDetails({
@@ -22,6 +23,7 @@ export default function ClientDetails({
   onDelete,
   onAddNote,
   onAddTask,
+  language: _language = 'EN',
 }: ClientDetailsProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);

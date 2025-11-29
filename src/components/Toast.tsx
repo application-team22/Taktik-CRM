@@ -5,9 +5,10 @@ interface ToastProps {
   message: string;
   type: 'success' | 'error';
   onClose: () => void;
+  language?: 'EN' | 'AR';
 }
 
-export default function Toast({ message, type, onClose }: ToastProps) {
+export default function Toast({ message, type, onClose, language = 'EN' }: ToastProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
@@ -17,7 +18,7 @@ export default function Toast({ message, type, onClose }: ToastProps) {
   }, [onClose]);
 
   return (
-    <div className="fixed top-4 right-4 z-50 animate-slide-in">
+    <div className={`fixed top-4 ${language === 'AR' ? 'left-4' : 'right-4'} z-50 ${language === 'AR' ? 'animate-slide-in-rtl' : 'animate-slide-in'}`} dir={language === 'AR' ? 'rtl' : 'ltr'}>
       <div
         className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl ${
           type === 'success'

@@ -6,11 +6,12 @@ import { supabase } from '../lib/supabase';
 
 interface AdminPanelProps {
   clients: Client[];
+  language?: 'EN' | 'AR';
 }
 
 type AdminView = 'reports' | 'users' | 'settings';
 
-export default function AdminPanel({ clients }: AdminPanelProps) {
+export default function AdminPanel({ clients, language: _language = 'EN' }: AdminPanelProps) {
   const [activeView, setActiveView] = useState<AdminView>('reports');
   const [tasks, setTasks] = useState<Task[]>([]);
 

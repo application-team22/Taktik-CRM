@@ -192,21 +192,21 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir={language === 'AR' ? 'rtl' : 'ltr'}>
       <div className="bg-white rounded-xl shadow-lg p-3 md:p-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
           <div className="sm:col-span-2 lg:col-span-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className={`absolute ${language === 'AR' ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400`} />
               <input
                 type="text"
                 placeholder={t.placeholders.searchClients}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-10 py-3 md:py-2.5 border border-gray-300 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className={`w-full ${language === 'AR' ? 'pr-10 pl-10' : 'pl-10 pr-10'} py-3 md:py-2.5 border border-gray-300 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
               />
               {isSearching && (
-                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600 animate-spin" />
+                <Loader2 className={`absolute ${language === 'AR' ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600 animate-spin`} />
               )}
             </div>
           </div>
@@ -249,29 +249,29 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
           </select>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+        <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 ${language === 'AR' ? 'flex-row-reverse' : ''}`}>
+          <div className={`flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto ${language === 'AR' ? 'flex-row-reverse' : ''}`}>
             {hasActiveFilters && (
               <button
                 onClick={handleClearFilters}
-                className="flex items-center justify-center gap-2 px-3 md:px-4 py-2 text-xs md:text-sm text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all duration-200 hover:scale-105 shadow-sm w-full sm:w-auto"
+                className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2 text-xs md:text-sm text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all duration-200 hover:scale-105 shadow-sm w-full sm:w-auto ${language === 'AR' ? 'flex-row-reverse' : ''}`}
               >
                 <X className="w-4 h-4" />
-                Clear Filters
+                {t.actions.filter}
               </button>
             )}
-            <span className="text-xs md:text-sm text-gray-600 text-center sm:text-left">
+            <span className={`text-xs md:text-sm text-gray-600 ${language === 'AR' ? 'text-right' : 'text-left'} sm:text-left`}>
               {t.pagination.showing} {startIndex + 1}-{Math.min(endIndex, filteredAndSortedClients.length)} {t.pagination.of} {filteredAndSortedClients.length} {t.pagination.clients} {filteredAndSortedClients.length !== clients.length && `(filtered from ${clients.length} total)`}
             </span>
           </div>
 
           <button
             onClick={handleExportCSV}
-            className="flex items-center justify-center gap-2 px-3 md:px-4 py-2 md:py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105 font-semibold text-xs md:text-sm w-full sm:w-auto"
+            className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2 md:py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105 font-semibold text-xs md:text-sm w-full sm:w-auto ${language === 'AR' ? 'flex-row-reverse' : ''}`}
           >
             <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export CSV</span>
-            <span className="sm:hidden">Export</span>
+            <span className="hidden sm:inline">{t.actions.export}</span>
+            <span className="sm:hidden">{t.actions.export}</span>
           </button>
         </div>
       </div>
@@ -468,13 +468,13 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
 
           {totalPages > 1 && (
             <div className="bg-white rounded-xl shadow-lg p-4 mt-4">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 ${language === 'AR' ? 'flex-row-reverse' : ''}`}>
                 <button
                   onClick={handlePreviousPage}
                   disabled={currentPage === 1}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 w-full sm:w-auto"
+                  className={`flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 w-full sm:w-auto ${language === 'AR' ? 'flex-row-reverse' : ''}`}
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  {language === 'AR' ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
                   {t.pagination.previous}
                 </button>
 
@@ -503,10 +503,10 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
                 <button
                   onClick={handleNextPage}
                   disabled={currentPage === totalPages}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 w-full sm:w-auto"
+                  className={`flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 w-full sm:w-auto ${language === 'AR' ? 'flex-row-reverse' : ''}`}
                 >
+                  {language === 'AR' ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                   {t.pagination.next}
-                  <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
             </div>

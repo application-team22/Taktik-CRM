@@ -8,9 +8,10 @@ import Toast from './Toast';
 interface ClientNotesProps {
   client: Client;
   onClose: () => void;
+  language?: 'EN' | 'AR';
 }
 
-export default function ClientNotes({ client, onClose }: ClientNotesProps) {
+export default function ClientNotes({ client, onClose, language: _language = 'EN' }: ClientNotesProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState('');
   const [loading, setLoading] = useState(true);

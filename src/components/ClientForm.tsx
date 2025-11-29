@@ -99,9 +99,9 @@ export default function ClientForm({ client, onSave, onClose, language }: Client
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm" dir={language === 'AR' ? 'rtl' : 'ltr'}>
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 md:px-6 py-4 md:py-5 flex items-center justify-between rounded-t-2xl">
+        <div className={`sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 md:px-6 py-4 md:py-5 flex items-center justify-between rounded-t-2xl ${language === 'AR' ? 'flex-row-reverse' : ''}`}>
           <h2 className="text-lg md:text-xl font-bold">
             {client ? `${t.actions.edit} ${t.navigation.clients}` : t.actions.addClient}
           </h2>
@@ -115,7 +115,7 @@ export default function ClientForm({ client, onSave, onClose, language }: Client
 
         <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-4">
           <div>
-            <label htmlFor="name" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="name" className={`block text-xs md:text-sm font-medium text-gray-700 mb-2 ${language === 'AR' ? 'text-right' : 'text-left'}`}>
               {t.fields.name} <span className="text-red-500">*</span>
             </label>
             <input
@@ -210,7 +210,7 @@ export default function ClientForm({ client, onSave, onClose, language }: Client
               {t.fields.price}
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+              <span className={`absolute ${language === 'AR' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-gray-500`}>$</span>
               <input
                 type="number"
                 id="price"
@@ -219,7 +219,7 @@ export default function ClientForm({ client, onSave, onClose, language }: Client
                 onChange={handleChange}
                 min="0"
                 step="0.01"
-                className={`w-full pl-8 pr-4 py-3 md:py-2.5 border rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                className={`w-full ${language === 'AR' ? 'pr-8 pl-4' : 'pl-8 pr-4'} py-3 md:py-2.5 border rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                   errors.price ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder={t.placeholders.enterPrice}
@@ -228,7 +228,7 @@ export default function ClientForm({ client, onSave, onClose, language }: Client
             {errors.price && <p className="mt-1 text-xs md:text-sm text-red-600">{errors.price}</p>}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+          <div className={`flex flex-col sm:flex-row gap-3 pt-4 border-t ${language === 'AR' ? 'flex-row-reverse' : ''}`}>
             <button
               type="submit"
               className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 md:px-6 rounded-xl font-semibold text-sm md:text-base hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105"

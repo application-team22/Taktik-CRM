@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Menu } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { translations } from './lib/translations';
+import { getDirection } from './lib/rtl';
 import { Client, ClientFormData } from './types/client';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -18,6 +19,10 @@ import LanguageSwitcher from './components/LanguageSwitcher';
 type View = 'dashboard' | 'clients' | 'tasks' | 'admin';
 
 function App() {
+  const [language, setLanguage] = useState<'EN' | 'AR'>(() => {
+    const saved = localStorage.getItem('language');
+    return (saved as 'EN' | 'AR') || 'EN';
+  });
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -34,10 +39,6 @@ function App() {
     onConfirm: () => void;
   } | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [language, setLanguage] = useState<'EN' | 'AR'>(() => {
-    const saved = localStorage.getItem('language');
-    return (saved as 'EN' | 'AR') || 'EN';
-  });
 
   useEffect(() => {
     fetchClients();
@@ -45,6 +46,8 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem('language', language);
+    document.documentElement.dir = getDirection(language);
+    document.documentElement.lang = language === 'AR' ? 'ar' : 'en';
   }, [language]);
 
   const fetchClients = async (isRefresh = false) => {
@@ -103,7 +106,6 @@ function App() {
   };
 
   const handleDeleteClient = (id: string) => {
-    const client = clients.find(c => c.id === id);
     setConfirmDialog({
       show: true,
       title: 'Delete Client',
@@ -188,9 +190,9 @@ function App() {
         language={language}
       />
 
-      <div className="flex-1 md:ml-64">
+      <div className={language === 'AR' ? 'flex-1 md:mr-64' : 'flex-1 md:ml-64'}>
         <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-20">
-          <div className="px-4 md:px-8 py-4 md:py-5 flex items-center justify-between">
+          <div className={`px-4 md:px-8 py-4 md:py-5 flex items-center ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'} justify-between`}>
             <button
               onClick={() => setIsSidebarOpen(true)}
               className="md:hidden p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
@@ -198,7 +200,7 @@ function App() {
             >
               <Menu className="w-6 h-6" />
             </button>
-            <div className="flex-1">
+            <div className="flex-1" dir={getDirection(language)}>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">
                 {view === 'dashboard' && t.header.dashboardTitle}
                 {view === 'clients' && t.header.clientsTitle}
@@ -212,12 +214,12 @@ function App() {
                 {view === 'admin' && t.header.adminSubtitle}
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}>
               <LanguageSwitcher language={language} onLanguageChange={setLanguage} />
               {view === 'clients' && (
                 <button
                   onClick={() => setShowForm(true)}
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 hover:scale-105"
+                  className={`flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 hover:scale-105 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}
                 >
                   <Plus className="w-4 h-4 md:w-5 md:h-5" />
                   <span className="hidden sm:inline">{t.actions.addClient}</span>
@@ -229,7 +231,7 @@ function App() {
 
         <main className="px-4 md:px-8 py-4 md:py-6">
           {refreshing && (
-            <div className="fixed top-20 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-30">
+            <div className={`fixed top-20 ${language === 'AR' ? 'left-4' : 'right-4'} bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-30`}>
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
               <span className="text-sm font-medium">Updating...</span>
             </div>
@@ -245,8 +247,8 @@ function App() {
               language={language}
             />
           )}
-          {view === 'tasks' && <TasksView />}
-          {view === 'admin' && <AdminPanel clients={clients} />}
+          {view === 'tasks' && <TasksView language={language} />}
+          {view === 'admin' && <AdminPanel clients={clients} language={language} />}
         </main>
       </div>
 
@@ -260,7 +262,7 @@ function App() {
       )}
 
       {notesClient && (
-        <ClientNotes client={notesClient} onClose={handleCloseNotes} />
+        <ClientNotes client={notesClient} onClose={handleCloseNotes} language={language} />
       )}
 
       {detailsClient && (
@@ -271,6 +273,7 @@ function App() {
           onDelete={handleDeleteClient}
           onAddNote={handleAddNoteFromDetails}
           onAddTask={handleAddTaskFromDetails}
+          language={language}
         />
       )}
 
@@ -279,6 +282,7 @@ function App() {
           message={toast.message}
           type={toast.type}
           onClose={() => setToast(null)}
+          language={language}
         />
       )}
 
@@ -288,6 +292,7 @@ function App() {
           message={confirmDialog.message}
           onConfirm={confirmDialog.onConfirm}
           onCancel={() => setConfirmDialog(null)}
+          language={language}
         />
       )}
     </div>
