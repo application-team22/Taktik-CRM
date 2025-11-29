@@ -24,7 +24,7 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
     { key: 'name', label: language === 'EN' ? 'Name' : 'الاسم', required: true },
     { key: 'phone_number', label: language === 'EN' ? 'Phone Number' : 'رقم الهاتف', required: true },
     { key: 'destination', label: language === 'EN' ? 'Destination' : 'الوجهة', required: true },
-    { key: 'status', label: language === 'EN' ? 'Status' : 'الحالة', required: false },
+    { key: 'status', label: language === 'EN' ? 'Status (Optional)' : 'الحالة (اختياري)', required: false },
     { key: 'price', label: language === 'EN' ? 'Price' : 'السعر', required: true },
     { key: 'country', label: language === 'EN' ? 'Country (Auto-detected)' : 'البلد (تلقائي)', required: false },
   ];
@@ -93,8 +93,8 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
           rowData.phone_number = formatPhoneNumber(rowData.phone_number);
         }
 
-        // Set default status if missing
-        if (!rowData.status) {
+        // Set status to "New Lead" if not provided or empty
+        if (!rowData.status || rowData.status.trim() === '') {
           rowData.status = 'New Lead';
         }
 
@@ -204,9 +204,14 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
               </p>
               <pre className="text-xs text-gray-600 overflow-x-auto">
 {`Name,Phone,Destination,Status,Price
-John Doe,+90 532 555 1234,Paris,New Lead,2500
-Jane Smith,+1 555 123 4567,Dubai,Contacted,3000`}
+John Doe,+90 532 555 1234,Paris,Contacted,2500
+Jane Smith,+1 555 123 4567,Dubai,,3000`}
               </pre>
+              <p className="text-xs text-blue-600 mt-2">
+                {language === 'EN' 
+                  ? '✓ Empty Status → "New Lead" | ✓ Country auto-detected from phone'
+                  : '✓ حالة فارغة ← "عميل جديد" | ✓ البلد يُكتشف من الهاتف'}
+              </p>
             </div>
 
             {loading && (
@@ -238,8 +243,8 @@ Jane Smith,+1 555 123 4567,Dubai,Contacted,3000`}
               <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
                 <CheckCircle className="w-4 h-4" />
                 {language === 'EN' 
-                  ? 'Country will be auto-detected from phone numbers'
-                  : 'سيتم اكتشاف البلد تلقائيًا من أرقام الهواتف'}
+                  ? 'Country auto-detected from phone | Status defaults to "New Lead" if not provided'
+                  : 'البلد يُكتشف من الهاتف | الحالة افتراضياً "عميل جديد" إذا لم تُحدد'}
               </p>
               <div className="mt-3 w-full bg-white rounded-full h-2">
                 <div 
