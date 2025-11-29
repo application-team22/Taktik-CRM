@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Edit2, Trash2, Search, X, Download, MessageSquare, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Client } from '../types/client';
+import { translations } from '../lib/translations';
 
 interface ClientListEnhancedProps {
   clients: Client[];
@@ -8,13 +9,15 @@ interface ClientListEnhancedProps {
   onDelete: (id: string) => void;
   onViewNotes: (client: Client) => void;
   onViewDetails: (client: Client) => void;
+  language: 'EN' | 'AR';
 }
 
 type SortOption = 'name-asc' | 'name-desc' | 'price-high' | 'price-low' | 'date-new' | 'date-old';
 
 const ITEMS_PER_PAGE = 20;
 
-export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNotes, onViewDetails }: ClientListEnhancedProps) {
+export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNotes, onViewDetails, language }: ClientListEnhancedProps) {
+  const t = translations[language];
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -197,7 +200,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search clients..."
+                placeholder={t.placeholders.searchClients}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-10 py-3 md:py-2.5 border border-gray-300 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -426,7 +429,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
                     }}
                     className="flex-1 py-2 px-2 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
                   >
-                    View Details
+                    {t.actions.viewDetails}
                   </button>
                   <button
                     onClick={(e) => {

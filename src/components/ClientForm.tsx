@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Client, ClientFormData, ClientStatus } from '../types/client';
+import { translations } from '../lib/translations';
 
 interface ClientFormProps {
   client: Client | null;
   onSave: (data: ClientFormData) => void;
   onClose: () => void;
+  language: 'EN' | 'AR';
 }
 
 const STATUS_OPTIONS: ClientStatus[] = [
@@ -16,7 +18,8 @@ const STATUS_OPTIONS: ClientStatus[] = [
   'Booked',
 ];
 
-export default function ClientForm({ client, onSave, onClose }: ClientFormProps) {
+export default function ClientForm({ client, onSave, onClose, language }: ClientFormProps) {
+  const t = translations[language];
   const [formData, setFormData] = useState<ClientFormData>({
     name: '',
     phone_number: '',
@@ -41,23 +44,34 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
     }
   }, [client]);
 
+  const getStatusTranslation = (status: ClientStatus) => {
+    const statusMap: Record<ClientStatus, keyof typeof t.statuses> = {
+      'New Lead': 'newLead',
+      'Contacted': 'contacted',
+      'Interested': 'interested',
+      'Not Interested': 'notInterested',
+      'Booked': 'booked',
+    };
+    return t.statuses[statusMap[status]];
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof ClientFormData, string>> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = `${t.fields.name} is required`;
     }
     if (!formData.phone_number.trim()) {
-      newErrors.phone_number = 'Phone number is required';
+      newErrors.phone_number = `${t.fields.phoneNumber} is required`;
     }
     if (!formData.destination.trim()) {
-      newErrors.destination = 'Destination is required';
+      newErrors.destination = `${t.fields.destination} is required`;
     }
     if (!formData.country.trim()) {
-      newErrors.country = 'Country is required';
+      newErrors.country = `${t.fields.country} is required`;
     }
     if (formData.price < 0) {
-      newErrors.price = 'Price must be a positive number';
+      newErrors.price = `${t.fields.price} must be a positive number`;
     }
 
     setErrors(newErrors);
@@ -89,7 +103,7 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 md:px-6 py-4 md:py-5 flex items-center justify-between rounded-t-2xl">
           <h2 className="text-lg md:text-xl font-bold">
-            {client ? 'Edit Client' : 'Add New Client'}
+            {client ? `${t.actions.edit} ${t.navigation.clients}` : t.actions.addClient}
           </h2>
           <button
             onClick={onClose}
@@ -102,7 +116,7 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
         <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-4">
           <div>
             <label htmlFor="name" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
-              Name <span className="text-red-500">*</span>
+              {t.fields.name} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -113,14 +127,14 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               className={`w-full px-4 py-3 md:py-2.5 border rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                 errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="Enter client name"
+              placeholder={t.placeholders.enterClientName}
             />
             {errors.name && <p className="mt-1 text-xs md:text-sm text-red-600">{errors.name}</p>}
           </div>
 
           <div>
             <label htmlFor="phone_number" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
-              Phone Number <span className="text-red-500">*</span>
+              {t.fields.phoneNumber} <span className="text-red-500">*</span>
             </label>
             <input
               type="tel"
@@ -131,14 +145,14 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               className={`w-full px-4 py-3 md:py-2.5 border rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                 errors.phone_number ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="+1 (555) 123-4567"
+              placeholder={t.placeholders.enterPhoneNumber}
             />
             {errors.phone_number && <p className="mt-1 text-xs md:text-sm text-red-600">{errors.phone_number}</p>}
           </div>
 
           <div>
             <label htmlFor="destination" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
-              Destination <span className="text-red-500">*</span>
+              {t.fields.destination} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -149,14 +163,14 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               className={`w-full px-4 py-3 md:py-2.5 border rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                 errors.destination ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="e.g., Paris, France"
+              placeholder={t.placeholders.enterDestination}
             />
             {errors.destination && <p className="mt-1 text-xs md:text-sm text-red-600">{errors.destination}</p>}
           </div>
 
           <div>
             <label htmlFor="country" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
-              Country <span className="text-red-500">*</span>
+              {t.fields.country} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -167,14 +181,14 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               className={`w-full px-4 py-3 md:py-2.5 border rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                 errors.country ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="Client's home country"
+              placeholder={t.placeholders.enterCountry}
             />
             {errors.country && <p className="mt-1 text-xs md:text-sm text-red-600">{errors.country}</p>}
           </div>
 
           <div>
             <label htmlFor="status" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
-              Status <span className="text-red-500">*</span>
+              {t.fields.status} <span className="text-red-500">*</span>
             </label>
             <select
               id="status"
@@ -185,7 +199,7 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
             >
               {STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {getStatusTranslation(status)}
                 </option>
               ))}
             </select>
@@ -193,7 +207,7 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
 
           <div>
             <label htmlFor="price" className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
-              Price
+              {t.fields.price}
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">$</span>
@@ -208,7 +222,7 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
                 className={`w-full pl-8 pr-4 py-3 md:py-2.5 border rounded-xl text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                   errors.price ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="0.00"
+                placeholder={t.placeholders.enterPrice}
               />
             </div>
             {errors.price && <p className="mt-1 text-xs md:text-sm text-red-600">{errors.price}</p>}
@@ -219,14 +233,14 @@ export default function ClientForm({ client, onSave, onClose }: ClientFormProps)
               type="submit"
               className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 md:px-6 rounded-xl font-semibold text-sm md:text-base hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:scale-105"
             >
-              {client ? 'Update Client' : 'Add Client'}
+              {client ? `${t.actions.edit} ${t.navigation.clients}` : t.actions.addClient}
             </button>
             <button
               type="button"
               onClick={onClose}
               className="flex-1 bg-gray-200 text-gray-800 py-3 px-4 md:px-6 rounded-xl font-semibold text-sm md:text-base hover:bg-gray-300 transition-all duration-200 hover:scale-105"
             >
-              Cancel
+              {t.actions.cancel}
             </button>
           </div>
         </form>

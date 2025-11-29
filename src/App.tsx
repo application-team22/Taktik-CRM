@@ -242,6 +242,7 @@ function App() {
               onDelete={handleDeleteClient}
               onViewNotes={handleViewNotes}
               onViewDetails={handleViewDetails}
+              language={language}
             />
           )}
           {view === 'tasks' && <TasksView />}
@@ -254,6 +255,7 @@ function App() {
           client={editingClient}
           onSave={handleSaveClient}
           onClose={handleCloseForm}
+          language={language}
         />
       )}
 
