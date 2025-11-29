@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Plus, Menu } from 'lucide-react';
-import { supabase } from './lib/supabase';
+import { Plus, Menu, LogOut } from 'lucide-react';
+import { supabase, User } from './lib/supabase';
+import { getCurrentUser, logout, isAdmin } from './lib/auth';
 import { translations } from './lib/translations';
 import { getDirection } from './lib/rtl';
 import { Client, ClientFormData } from './types/client';
+import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import ClientListEnhanced from './components/ClientListEnhanced';
@@ -20,6 +22,7 @@ import LanguageSwitcher from './components/LanguageSwitcher';
 type View = 'dashboard' | 'clients' | 'tasks' | 'import' | 'admin';
 
 function App() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [language, setLanguage] = useState<'EN' | 'AR'>(() => {
     const saved = localStorage.getItem('language');
     return (saved as 'EN' | 'AR') || 'EN';
@@ -42,7 +45,13 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
-    fetchClients();
+    const user = getCurrentUser();
+    setCurrentUser(user);
+    if (user) {
+      fetchClients();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -73,6 +82,26 @@ function App() {
     }
   };
 
+  const handleLoginSuccess = (user: User) => {
+    setCurrentUser(user);
+    fetchClients();
+  };
+
+  const handleLogout = () => {
+    setConfirmDialog({
+      show: true,
+      title: language === 'EN' ? 'Logout' : 'تسجيل الخروج',
+      message: language === 'EN' ? 'Are you sure you want to logout?' : 'هل أنت متأكد من تسجيل الخروج؟',
+      onConfirm: () => {
+        logout();
+        setCurrentUser(null);
+        setClients([]);
+        setView('dashboard');
+        setConfirmDialog(null);
+      },
+    });
+  };
+
   const handleSaveClient = async (formData: ClientFormData) => {
     try {
       if (editingClient) {
@@ -86,7 +115,7 @@ function App() {
       } else {
         const { error } = await supabase
           .from('clients')
-          .insert([formData]);
+          .insert([{ ...formData, created_by: currentUser?.id }]);
 
         if (error) throw error;
         setToast({ message: t.messages.clientAddedSuccess, type: 'success' });
@@ -167,6 +196,11 @@ function App() {
 
   const t = translations[language];
 
+  // Show login screen if not authenticated
+  if (!currentUser) {
+    return <Login onLoginSuccess={handleLoginSuccess} language={language} />;
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -178,17 +212,24 @@ function App() {
     );
   }
 
+  const userIsAdmin = isAdmin(currentUser);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
       <Sidebar
         currentView={view}
         onNavigate={(newView) => {
+          // Prevent agents from accessing admin and import sections
+          if (!userIsAdmin && (newView === 'admin' || newView === 'import')) {
+            return;
+          }
           setView(newView as View);
           setIsSidebarOpen(false);
         }}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         language={language}
+        isAdmin={userIsAdmin}
       />
 
       <div className={language === 'AR' ? 'flex-1 md:mr-64' : 'flex-1 md:ml-64'}>
@@ -219,7 +260,9 @@ function App() {
             </div>
             <div className={`flex items-center gap-3 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}>
               <LanguageSwitcher language={language} onLanguageChange={setLanguage} />
-              {view === 'clients' && (
+              
+              {/* Only show Add Client button for admins */}
+              {view === 'clients' && userIsAdmin && (
                 <button
                   onClick={() => setShowForm(true)}
                   className={`flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 hover:scale-105 ${language === 'AR' ? 'flex-row-reverse' : 'flex-row'}`}
@@ -228,6 +271,15 @@ function App() {
                   <span className="hidden sm:inline">{t.actions.addClient}</span>
                 </button>
               )}
+              
+              {/* Logout button */}
+              <button
+                onClick={handleLogout}
+                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                title={language === 'EN' ? 'Logout' : 'تسجيل الخروج'}
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </header>
@@ -248,10 +300,11 @@ function App() {
               onViewNotes={handleViewNotes}
               onViewDetails={handleViewDetails}
               language={language}
+              isAdmin={userIsAdmin}
             />
           )}
           {view === 'tasks' && <TasksView language={language} />}
-          {view === 'import' && (
+          {view === 'import' && userIsAdmin && (
             <ImportClients
               language={language}
               onNavigateToClients={() => {
@@ -260,11 +313,11 @@ function App() {
               }}
             />
           )}
-          {view === 'admin' && <AdminPanel clients={clients} language={language} />}
+          {view === 'admin' && userIsAdmin && <AdminPanel clients={clients} language={language} />}
         </main>
       </div>
 
-      {showForm && (
+      {showForm && userIsAdmin && (
         <ClientForm
           client={editingClient}
           onSave={handleSaveClient}
@@ -286,6 +339,7 @@ function App() {
           onAddNote={handleAddNoteFromDetails}
           onAddTask={handleAddTaskFromDetails}
           language={language}
+          isAdmin={userIsAdmin}
         />
       )}
 
