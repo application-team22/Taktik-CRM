@@ -8,8 +8,10 @@ export const login = async (email: string, password: string): Promise<User | nul
     const { data: allUsers, error: allUsersError } = await supabase
       .from('users')
       .select('*');
+    console.log('===== ALL USERS IN TABLE =====');
     console.log('All users in database:', allUsers);
     console.log('All users error:', allUsersError);
+    console.log('Number of users found:', allUsers?.length || 0);
     
     // Now try to find the specific user
     const { data: users, error } = await supabase
