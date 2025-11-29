@@ -104,29 +104,71 @@ function App() {
 
   const handleSaveClient = async (formData: ClientFormData) => {
     try {
-      if (editingClient) {
-        const { error } = await supabase
-          .from('clients')
-          .update({ ...formData, updated_at: new Date().toISOString() })
-          .eq('id', editingClient.id);
+      console.log('=== CLIENT SAVE OPERATION START ===');
+      console.log('Current user:', currentUser);
+      console.log('Form data:', formData);
+      console.log('Is editing?', !!editingClient);
 
-        if (error) throw error;
+      if (editingClient) {
+        console.log('Updating existing client:', editingClient.id);
+        const updateData = { ...formData, updated_at: new Date().toISOString() };
+        console.log('Update payload:', updateData);
+
+        const { data, error } = await supabase
+          .from('clients')
+          .update(updateData)
+          .eq('id', editingClient.id)
+          .select();
+
+        console.log('Update response:', { data, error });
+        if (error) {
+          console.error('Update error details:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
+          throw error;
+        }
+        console.log('Client updated successfully:', data);
         setToast({ message: t.messages.clientUpdatedSuccess, type: 'success' });
       } else {
-        const { error } = await supabase
-          .from('clients')
-          .insert([{ ...formData, created_by: currentUser?.id }]);
+        console.log('Creating new client...');
+        const insertData = { ...formData, created_by: currentUser?.id };
+        console.log('Insert payload:', insertData);
 
-        if (error) throw error;
+        const { data, error } = await supabase
+          .from('clients')
+          .insert([insertData])
+          .select();
+
+        console.log('Insert response:', { data, error });
+        if (error) {
+          console.error('Insert error details:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
+          throw error;
+        }
+        console.log('Client created successfully:', data);
         setToast({ message: t.messages.clientAddedSuccess, type: 'success' });
       }
 
+      console.log('Refreshing client list...');
       await fetchClients(true);
       setShowForm(false);
       setEditingClient(null);
-    } catch (error) {
-      console.error('Error saving client:', error);
-      setToast({ message: 'Failed to save client. Please try again.', type: 'error' });
+      console.log('=== CLIENT SAVE OPERATION COMPLETE ===');
+    } catch (error: any) {
+      console.error('=== CLIENT SAVE OPERATION FAILED ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error?.message);
+      console.error('Error stack:', error?.stack);
+
+      const errorMessage = error?.message || 'Failed to save client. Please try again.';
+      setToast({ message: errorMessage, type: 'error' });
     }
   };
 
