@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Upload, Sparkles, CheckCircle, AlertCircle, FileText, Download } from 'lucide-react';
-import { intelligentFieldMapping, FieldMapping } from '../lib/openai';
+import { Upload, Sparkles, CheckCircle, AlertCircle, FileText, Download, Edit2, Trash2 } from 'lucide-react';
+import { intelligentFieldMapping, FieldMapping, extractLeadsFromConversation, ExtractedLead } from '../lib/openai';
 import { detectCountryFromPhone, formatPhoneNumber } from '../lib/phoneCountryDetector';
 import { supabase } from '../lib/supabase';
 
@@ -9,13 +9,23 @@ interface ImportClientsProps {
   onNavigateToClients: () => void;
 }
 
+type FileType = 'csv' | 'conversation';
+
 export default function ImportClients({ language, onNavigateToClients }: ImportClientsProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [fileType, setFileType] = useState<FileType | null>(null);
+  
+  // CSV mode states
   const [parsedData, setParsedData] = useState<{ headers: string[]; rows: any[][] } | null>(null);
   const [mapping, setMapping] = useState<FieldMapping | null>(null);
+  
+  // Conversation mode states
+  const [extractedLeads, setExtractedLeads] = useState<ExtractedLead[]>([]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [step, setStep] = useState<'upload' | 'mapping' | 'complete'>('upload');
+  const [step, setStep] = useState<'upload' | 'mapping' | 'preview' | 'complete'>('upload');
   const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
 
   const isRTL = language === 'AR';
@@ -38,19 +48,53 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
 
     try {
       const text = await uploadedFile.text();
-      const lines = text.trim().split('\n');
-      const headers = lines[0].split(',').map(h => h.trim());
-      const rows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()));
+      
+      // Detect file type: CSV or WhatsApp conversation
+      const isCSV = text.includes(',') && text.split('\n')[0].split(',').length > 1;
+      
+      if (isCSV) {
+        // CSV MODE: Existing logic
+        setFileType('csv');
+        const lines = text.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        const rows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()));
 
-      setParsedData({ headers, rows });
+        setParsedData({ headers, rows });
 
-      // Use AI to map fields
-      const aiMapping = await intelligentFieldMapping(headers, rows);
-      setMapping(aiMapping);
-      setStep('mapping');
+        // Use AI to map fields
+        const aiMapping = await intelligentFieldMapping(headers, rows);
+        setMapping(aiMapping);
+        setStep('mapping');
+      } else {
+        // CONVERSATION MODE: New AI extraction
+        setFileType('conversation');
+        
+        // Call Netlify Function to extract leads
+        const leads = await extractLeadsFromConversation(text);
+        
+        if (leads.length === 0) {
+          alert(language === 'EN' 
+            ? 'No leads with phone numbers found in the conversation.' 
+            : 'لم يتم العثور على عملاء محتملين بأرقام هواتف في المحادثة.');
+          handleReset();
+          return;
+        }
+
+        // Auto-detect country from phone numbers
+        const leadsWithCountry = leads.map(lead => ({
+          ...lead,
+          country: detectCountryFromPhone(lead.phone_number) || 'Unknown',
+        }));
+
+        setExtractedLeads(leadsWithCountry);
+        setStep('preview');
+      }
     } catch (error) {
-      console.error('Error parsing file:', error);
-      alert(language === 'EN' ? 'Error parsing file. Please check the format.' : 'خطأ في قراءة الملف. تحقق من التنسيق.');
+      console.error('Error processing file:', error);
+      alert(language === 'EN' 
+        ? 'Error processing file. Please check the format or try again.' 
+        : 'خطأ في معالجة الملف. تحقق من التنسيق أو حاول مرة أخرى.');
+      handleReset();
     } finally {
       setLoading(false);
     }
@@ -61,7 +105,17 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
     setMapping({ ...mapping, [field]: value || null });
   };
 
-  const handleImport = async () => {
+  const handleEditLead = (index: number, field: keyof ExtractedLead, value: string) => {
+    const updatedLeads = [...extractedLeads];
+    updatedLeads[index] = { ...updatedLeads[index], [field]: value };
+    setExtractedLeads(updatedLeads);
+  };
+
+  const handleDeleteLead = (index: number) => {
+    setExtractedLeads(extractedLeads.filter((_, i) => i !== index));
+  };
+
+  const handleImportCSV = async () => {
     if (!parsedData || !mapping) return;
 
     setImporting(true);
@@ -135,11 +189,57 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
     }
   };
 
+  const handleImportConversation = async () => {
+    if (extractedLeads.length === 0) return;
+
+    setImporting(true);
+    let successCount = 0;
+    let failedCount = 0;
+
+    try {
+      for (const lead of extractedLeads) {
+        try {
+          const { error } = await supabase
+            .from('clients')
+            .insert([{
+              name: lead.name,
+              phone_number: lead.phone_number,
+              destination: lead.destination,
+              status: lead.status || 'New Lead',
+              price: lead.price,
+              country: lead.country || null,
+            }]);
+
+          if (error) {
+            console.error('Error importing lead:', error);
+            failedCount++;
+          } else {
+            successCount++;
+          }
+        } catch (err) {
+          console.error('Error:', err);
+          failedCount++;
+        }
+      }
+
+      setImportResult({ success: successCount, failed: failedCount });
+      setStep('complete');
+    } catch (error) {
+      console.error('Import error:', error);
+      alert(language === 'EN' ? 'Import failed. Please try again.' : 'فشل الاستيراد. حاول مرة أخرى.');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const handleReset = () => {
     setStep('upload');
     setFile(null);
+    setFileType(null);
     setParsedData(null);
     setMapping(null);
+    setExtractedLeads([]);
+    setEditingIndex(null);
     setImportResult(null);
   };
 
@@ -158,7 +258,7 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
   const isComplete = status.mapped === status.total;
 
   return (
-    <div className="max-w-4xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="bg-white rounded-xl shadow-lg p-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
@@ -171,8 +271,8 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
             </h2>
             <p className="text-sm text-gray-600">
               {language === 'EN' 
-                ? 'Upload any CSV/TXT file - AI will map fields & detect countries automatically'
-                : 'قم بتحميل أي ملف - سيقوم الذكاء الاصطناعي بتعيين الحقول واكتشاف البلدان تلقائيًا'}
+                ? 'Upload CSV or WhatsApp conversations - AI extracts leads automatically'
+                : 'قم بتحميل ملف CSV أو محادثات واتساب - يستخرج الذكاء الاصطناعي العملاء تلقائيًا'}
             </p>
           </div>
         </div>
@@ -192,26 +292,36 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
                 {language === 'EN' ? 'Drop your file here or click to browse' : 'اسحب ملفك هنا أو انقر للتصفح'}
               </p>
               <p className="text-sm text-gray-500">
-                {language === 'EN' ? 'Supports .txt and .csv files' : 'يدعم ملفات .txt و .csv'}
+                {language === 'EN' ? 'Supports .txt (WhatsApp) and .csv files' : 'يدعم ملفات .txt (واتساب) و .csv'}
               </p>
             </label>
 
             {/* Sample Format */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                {language === 'EN' ? 'Example File Format:' : 'مثال على تنسيق الملف:'}
-              </p>
-              <pre className="text-xs text-gray-600 overflow-x-auto">
-{`Name,Phone,Destination,Status,Price
-John Doe,+90 532 555 1234,Paris,Contacted,2500
-Jane Smith,+1 555 123 4567,Dubai,,3000`}
-              </pre>
-              <p className="text-xs text-blue-600 mt-2">
-                {language === 'EN' 
-                  ? '✓ Empty Status → "New Lead" | ✓ Country auto-detected from phone'
-                  : '✓ حالة فارغة ← "عميل جديد" | ✓ البلد يُكتشف من الهاتف'}
-              </p>
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* CSV Example */}
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  {language === 'EN' ? 'CSV Format:' : 'تنسيق CSV:'}
+                </p>
+                <pre className="text-xs text-gray-600 overflow-x-auto">
+{`Name,Phone,Destination,Price
+John,+90 532 555 1234,Paris,2500`}
+                </pre>
+              </div>
+
+              {/* WhatsApp Example */}
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  {language === 'EN' ? 'WhatsApp Format:' : 'تنسيق واتساب:'}
+                </p>
+                <pre className="text-xs text-gray-600 overflow-x-auto">
+{`[5/8/23] John: Hi, need trip to Paris
+[5/8/23] Agent: Sure! +90 532 555...
+Price: 2500€`}
+                </pre>
+              </div>
             </div>
 
             {loading && (
@@ -225,7 +335,7 @@ Jane Smith,+1 555 123 4567,Dubai,,3000`}
           </div>
         )}
 
-        {/* Step 2: Mapping */}
+        {/* Step 2: CSV Mapping */}
         {step === 'mapping' && mapping && parsedData && (
           <div>
             <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
@@ -237,14 +347,8 @@ Jane Smith,+1 555 123 4567,Dubai,,3000`}
               </div>
               <p className="text-sm text-gray-600">
                 {language === 'EN' 
-                  ? `AI has mapped ${status.mapped} out of ${status.total} required fields. Review and adjust if needed.`
-                  : `قام الذكاء الاصطناعي بتعيين ${status.mapped} من ${status.total} حقول مطلوبة. راجع وعدل إذا لزم الأمر.`}
-              </p>
-              <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
-                <CheckCircle className="w-4 h-4" />
-                {language === 'EN' 
-                  ? 'Country auto-detected from phone | Status defaults to "New Lead" if not provided'
-                  : 'البلد يُكتشف من الهاتف | الحالة افتراضياً "عميل جديد" إذا لم تُحدد'}
+                  ? `AI has mapped ${status.mapped} out of ${status.total} required fields.`
+                  : `قام الذكاء الاصطناعي بتعيين ${status.mapped} من ${status.total} حقول مطلوبة.`}
               </p>
               <div className="mt-3 w-full bg-white rounded-full h-2">
                 <div 
@@ -293,7 +397,7 @@ Jane Smith,+1 555 123 4567,Dubai,,3000`}
                 {language === 'EN' ? 'Cancel' : 'إلغاء'}
               </button>
               <button
-                onClick={handleImport}
+                onClick={handleImportCSV}
                 disabled={!isComplete || importing}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
@@ -306,6 +410,150 @@ Jane Smith,+1 555 123 4567,Dubai,,3000`}
                   <>
                     <Download className="w-5 h-5" />
                     <span>{language === 'EN' ? 'Import Data' : 'استيراد البيانات'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2b: Preview Extracted Leads (Conversation mode) */}
+        {step === 'preview' && extractedLeads.length > 0 && (
+          <div>
+            <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <p className="font-semibold text-gray-800">
+                  {language === 'EN' 
+                    ? `AI Extracted ${extractedLeads.length} Leads`
+                    : `استخرج الذكاء الاصطناعي ${extractedLeads.length} عميل محتمل`}
+                </p>
+              </div>
+              <p className="text-sm text-gray-600">
+                {language === 'EN' 
+                  ? 'Review and edit the extracted information before importing'
+                  : 'راجع وعدّل المعلومات المستخرجة قبل الاستيراد'}
+              </p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="px-4 py-2 text-left text-sm font-semibold">{language === 'EN' ? 'Name' : 'الاسم'}</th>
+                    <th className="px-4 py-2 text-left text-sm font-semibold">{language === 'EN' ? 'Phone' : 'الهاتف'}</th>
+                    <th className="px-4 py-2 text-left text-sm font-semibold">{language === 'EN' ? 'Destination' : 'الوجهة'}</th>
+                    <th className="px-4 py-2 text-left text-sm font-semibold">{language === 'EN' ? 'Price' : 'السعر'}</th>
+                    <th className="px-4 py-2 text-left text-sm font-semibold">{language === 'EN' ? 'Country' : 'البلد'}</th>
+                    <th className="px-4 py-2 text-center text-sm font-semibold">{language === 'EN' ? 'Actions' : 'إجراءات'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {extractedLeads.map((lead, index) => (
+                    <tr key={index} className="border-b hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        {editingIndex === index ? (
+                          <input
+                            type="text"
+                            value={lead.name}
+                            onChange={(e) => handleEditLead(index, 'name', e.target.value)}
+                            className="w-full px-2 py-1 border rounded"
+                          />
+                        ) : (
+                          <span className="text-sm">{lead.name}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {editingIndex === index ? (
+                          <input
+                            type="text"
+                            value={lead.phone_number}
+                            onChange={(e) => handleEditLead(index, 'phone_number', e.target.value)}
+                            className="w-full px-2 py-1 border rounded"
+                          />
+                        ) : (
+                          <span className="text-sm font-mono">{lead.phone_number}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {editingIndex === index ? (
+                          <input
+                            type="text"
+                            value={lead.destination}
+                            onChange={(e) => handleEditLead(index, 'destination', e.target.value)}
+                            className="w-full px-2 py-1 border rounded"
+                          />
+                        ) : (
+                          <span className="text-sm">{lead.destination}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {editingIndex === index ? (
+                          <input
+                            type="text"
+                            value={lead.price}
+                            onChange={(e) => handleEditLead(index, 'price', e.target.value)}
+                            className="w-full px-2 py-1 border rounded"
+                          />
+                        ) : (
+                          <span className="text-sm">{lead.price}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-600">{lead.country}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          {editingIndex === index ? (
+                            <button
+                              onClick={() => setEditingIndex(null)}
+                              className="p-1 text-green-600 hover:bg-green-50 rounded"
+                            >
+                              <CheckCircle className="w-5 h-5" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setEditingIndex(index)}
+                              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            >
+                              <Edit2 className="w-5 h-5" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteLead(index)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-8 flex gap-4">
+              <button
+                onClick={handleReset}
+                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold"
+              >
+                {language === 'EN' ? 'Cancel' : 'إلغاء'}
+              </button>
+              <button
+                onClick={handleImportConversation}
+                disabled={importing || extractedLeads.length === 0}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {importing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    <span>{language === 'EN' ? 'Importing...' : 'جاري الاستيراد...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-5 h-5" />
+                    <span>{language === 'EN' ? `Import ${extractedLeads.length} Leads` : `استيراد ${extractedLeads.length} عميل`}</span>
                   </>
                 )}
               </button>

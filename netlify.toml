@@ -1,0 +1,18 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[dev]
+  functions = "netlify/functions"
+  functionsPort = 9999
+  # Increase timeout for local development
+  timeout = 300
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,3 +1,8 @@
+// NOTE: API key should be in Netlify environment variables for security
+// This file now has TWO modes:
+// 1. CSV field mapping (existing functionality)
+// 2. WhatsApp conversation extraction (new - via Netlify Function)
+
 const OPENAI_API_KEY = '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';
 
 export interface FieldMapping {
@@ -9,6 +14,17 @@ export interface FieldMapping {
   country: string | null;
 }
 
+export interface ExtractedLead {
+  name: string;
+  phone_number: string;
+  destination: string;
+  status: string;
+  price: string;
+  services?: string;
+  country?: string;
+}
+
+// EXISTING FUNCTION: CSV Field Mapping
 export async function intelligentFieldMapping(
   headers: string[],
   sampleRows: any[][]
@@ -33,6 +49,7 @@ IMPORTANT: For phone numbers, look for columns with international format (+count
 The country field is OPTIONAL - if you see a phone number with country code, you can leave country as null.
 
 Return ONLY a JSON object mapping the required fields to the column headers. Use null if no match found.
+
 Example: {"name": "Full Name", "phone_number": "Phone", "destination": "Travel To", "status": "Lead Status", "price": "Cost", "country": null}
 
 For status field: if the data doesn't exactly match our status options, map to the closest column that indicates lead/booking status.`;
@@ -66,11 +83,9 @@ For status field: if the data doesn't exactly match our status options, map to t
 
     const data = await response.json();
     const mapping = JSON.parse(data.choices[0].message.content);
-
     return mapping;
   } catch (error) {
     console.error('Error mapping fields:', error);
-    // Return basic fuzzy matching fallback
     return fallbackMapping(headers);
   }
 }
@@ -104,4 +119,31 @@ function fallbackMapping(headers: string[]): FieldMapping {
   });
 
   return mapping;
+}
+
+// NEW FUNCTION: Extract leads from WhatsApp conversation via Netlify Function
+export async function extractLeadsFromConversation(
+  conversationText: string
+): Promise<ExtractedLead[]> {
+  try {
+    // Call Netlify Function instead of OpenAI directly
+    const response = await fetch('/.netlify/functions/extract-leads', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ conversationText }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to extract leads');
+    }
+
+    const { leads } = await response.json();
+    return leads;
+  } catch (error) {
+    console.error('Error extracting leads:', error);
+    throw error;
+  }
 }
