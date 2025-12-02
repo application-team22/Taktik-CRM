@@ -121,29 +121,28 @@ function fallbackMapping(headers: string[]): FieldMapping {
   return mapping;
 }
 
-// NEW FUNCTION: Extract leads from WhatsApp conversation via Netlify Function
-export async function extractLeadsFromConversation(
-  conversationText: string
-): Promise<ExtractedLead[]> {
+// NEW FUNCTION: Start background extraction job
+export async function startBackgroundExtraction(
+  conversationText: string,
+  batchId: string
+): Promise<void> {
   try {
-    // Call Netlify Function instead of OpenAI directly
-    const response = await fetch('/.netlify/functions/extract-leads', {
+    const response = await fetch('/.netlify/functions/extract-leads-background', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ conversationText }),
+      body: JSON.stringify({ conversationText, batchId }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to extract leads');
+      throw new Error(errorData.error || 'Failed to start extraction');
     }
 
-    const { leads } = await response.json();
-    return leads;
+    // Background function returns immediately, no need to wait
   } catch (error) {
-    console.error('Error extracting leads:', error);
+    console.error('Error starting background extraction:', error);
     throw error;
   }
 }
