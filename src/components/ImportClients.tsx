@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Upload, Sparkles, CheckCircle, FileText, Download, Loader2 } from 'lucide-react';
-import { intelligentFieldMapping, FieldMapping, startBackgroundExtraction, ExtractedLead } from '../lib/openai';
 import { detectCountryFromPhone } from '../lib/phoneCountryDetector';
 import { supabase } from '../lib/supabase';
 
@@ -9,88 +8,25 @@ interface ImportClientsProps {
   onNavigateToClients: () => void;
 }
 
-type FileType = 'csv' | 'conversation';
-
-interface BatchProgress {
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  totalChunks: number;
-  processedChunks: number;
-  totalLeads: number;
-  errorMessage?: string;
+interface ExtractedLead {
+  name: string;
+  phone_number: string;
+  destination: string;
+  status: string;
+  price: string;
+  country?: string;
 }
 
 export default function ImportClients({ language, onNavigateToClients }: ImportClientsProps) {
   const [file, setFile] = useState<File | null>(null);
   const [extractedLeads, setExtractedLeads] = useState<ExtractedLead[]>([]);
-  const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
-  const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
+  const [batchProgress, setBatchProgress] = useState<{ status: string; totalChunks: number; processedChunks: number; totalLeads: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [step, setStep] = useState<'upload' | 'processing' | 'preview' | 'complete'>('upload');
   const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
 
   const isRTL = language === 'AR';
-
-  useEffect(() => {
-    if (!currentBatchId || step !== 'processing') return;
-
-    console.log('Starting to poll for batch:', currentBatchId);
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const { data, error } = await supabase
-          .from('import_batches')
-          .select('*')
-          .eq('id', currentBatchId)
-          .single();
-
-        if (error) {
-          console.error('Error polling batch:', error);
-          return;
-        }
-
-        if (data) {
-          console.log('Batch status:', data.status, 'Progress:', data.processed_chunks, '/', data.total_chunks);
-          
-          setBatchProgress({
-            status: data.status,
-            totalChunks: data.total_chunks || 0,
-            processedChunks: data.processed_chunks || 0,
-            totalLeads: data.total_leads || 0,
-            errorMessage: data.error_message,
-          });
-
-          if (data.status === 'completed' && data.leads_data) {
-            console.log('Processing completed! Total leads:', data.total_leads);
-            const leads = data.leads_data as ExtractedLead[];
-            
-            const leadsWithCountry = leads.map(lead => ({
-              ...lead,
-              country: detectCountryFromPhone(lead.phone_number) || 'Unknown',
-            }));
-
-            setExtractedLeads(leadsWithCountry);
-            setStep('preview');
-            clearInterval(pollInterval);
-          } else if (data.status === 'failed') {
-            console.error('Processing failed:', data.error_message);
-            alert(language === 'EN' 
-              ? `Processing failed: ${data.error_message || 'Unknown error'}` 
-              : `فشلت المعالجة: ${data.error_message || 'خطأ غير معروف'}`);
-            handleReset();
-            clearInterval(pollInterval);
-          }
-        }
-      } catch (error) {
-        console.error('Polling error:', error);
-      }
-    }, 2000);
-
-    return () => {
-      console.log('Stopping polling');
-      clearInterval(pollInterval);
-    };
-  }, [currentBatchId, step, language]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = e.target.files?.[0];
@@ -103,37 +39,65 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
       const text = await uploadedFile.text();
       console.log('File loaded, length:', text.length);
       
-      // ALL FILES (.txt and .csv) go through background processing
-      // The AI will auto-detect the format and extract accordingly
+      // Estimate tokens (rough: 1 token ≈ 4 characters)
+      const estimatedTokens = Math.ceil(text.length / 4);
+      console.log('Estimated tokens:', estimatedTokens);
       
-      console.log('Starting background extraction...');
+      // For production: Use direct function call instead of background
+      // This is more reliable on Netlify free tier
+      if (estimatedTokens > 15000) {
+        alert(language === 'EN' 
+          ? 'This file is very large. Please split it into smaller files (under 60KB) for best results.'
+          : 'هذا الملف كبير جدًا. يرجى تقسيمه إلى ملفات أصغر (أقل من 60 كيلوبايت) للحصول على أفضل النتائج.');
+        handleReset();
+        setLoading(false);
+        return;
+      }
       
-      const { data: batch, error: batchError } = await supabase
-        .from('import_batches')
-        .insert([{ status: 'pending' }])
-        .select()
-        .single();
-
-      if (batchError) {
-        console.error('Supabase batch creation error:', batchError);
-        throw new Error(`Failed to create import batch: ${batchError.message}`);
-      }
-
-      if (!batch) {
-        console.error('No batch data returned');
-        throw new Error('Failed to create import batch: No data returned');
-      }
-
-      console.log('Batch created successfully:', batch.id);
-      setCurrentBatchId(batch.id);
+      console.log('Starting extraction via direct function...');
       setStep('processing');
+      setBatchProgress({
+        status: 'processing',
+        totalChunks: 1,
+        processedChunks: 0,
+        totalLeads: 0,
+      });
       
       try {
-        await startBackgroundExtraction(text, batch.id);
-        console.log('Background extraction started successfully');
+        // Call the regular (non-background) function which works reliably
+        const response = await fetch('/.netlify/functions/extract-leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversationText: text }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Extraction failed');
+        }
+
+        const { leads } = await response.json();
+        console.log('Extraction completed, leads found:', leads.length);
+        
+        if (leads.length === 0) {
+          alert(language === 'EN' 
+            ? 'No leads with phone numbers found in the file.'
+            : 'لم يتم العثور على عملاء محتملين بأرقام هواتف في الملف.');
+          handleReset();
+          return;
+        }
+
+        // Add country detection
+        const leadsWithCountry = leads.map((lead: ExtractedLead) => ({
+          ...lead,
+          country: detectCountryFromPhone(lead.phone_number) || 'Unknown',
+        }));
+
+        setExtractedLeads(leadsWithCountry);
+        setStep('preview');
       } catch (extractError) {
-        console.error('Background extraction error:', extractError);
-        throw new Error(`Failed to start extraction: ${extractError instanceof Error ? extractError.message : 'Unknown error'}`);
+        console.error('Extraction error:', extractError);
+        throw new Error(`Failed to extract leads: ${extractError instanceof Error ? extractError.message : 'Unknown error'}`);
       }
     } catch (error) {
       console.error('File upload error:', error);
@@ -176,10 +140,6 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
         }
       }
 
-      if (currentBatchId) {
-        await supabase.from('import_batches').delete().eq('id', currentBatchId);
-      }
-
       setImportResult({ success: successCount, failed: failedCount });
       setStep('complete');
     } catch (error) {
@@ -194,7 +154,6 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
     setStep('upload');
     setFile(null);
     setExtractedLeads([]);
-    setCurrentBatchId(null);
     setBatchProgress(null);
     setImportResult(null);
   };
@@ -264,39 +223,12 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
               </h3>
               <p className="text-gray-600 mb-6">
                 {language === 'EN' 
-                  ? 'AI is extracting leads. This may take a few minutes for large files.'
-                  : 'الذكاء الاصطناعي يستخرج العملاء. قد يستغرق هذا بضع دقائق للملفات الكبيرة.'}
+                  ? 'AI is extracting leads with phone numbers. This usually takes 10-30 seconds.'
+                  : 'الذكاء الاصطناعي يستخرج العملاء بأرقام الهواتف. عادة ما يستغرق ذلك 10-30 ثانية.'}
               </p>
-
-              {batchProgress && batchProgress.totalChunks > 0 ? (
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm text-gray-600 mb-2">
-                      <span>{language === 'EN' ? 'Progress' : 'التقدم'}</span>
-                      <span>{batchProgress.processedChunks} / {batchProgress.totalChunks}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
-                        className="bg-gradient-to-r from-blue-600 to-purple-600 h-3 rounded-full transition-all"
-                        style={{ width: `${batchProgress.totalChunks > 0 ? (batchProgress.processedChunks / batchProgress.totalChunks) * 100 : 0}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {batchProgress.totalLeads > 0 && (
-                    <div className="p-4 bg-green-50 rounded-lg">
-                      <p className="text-sm text-green-800 flex items-center justify-center gap-2">
-                        <CheckCircle className="w-4 h-4" />
-                        {language === 'EN' ? `Found ${batchProgress.totalLeads} leads...` : `وجد ${batchProgress.totalLeads} عميل...`}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-sm text-gray-500">
-                  {language === 'EN' ? 'Initializing...' : 'جاري التهيئة...'}
-                </div>
-              )}
+              <p className="text-sm text-gray-500">
+                {language === 'EN' ? 'Please wait...' : 'يرجى الانتظار...'}
+              </p>
             </div>
           </div>
         )}
