@@ -21,9 +21,6 @@ interface BatchProgress {
 
 export default function ImportClients({ language, onNavigateToClients }: ImportClientsProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [fileType, setFileType] = useState<FileType | null>(null);
-  const [parsedData, setParsedData] = useState<{ headers: string[]; rows: any[][] } | null>(null);
-  const [mapping, setMapping] = useState<FieldMapping | null>(null);
   const [extractedLeads, setExtractedLeads] = useState<ExtractedLead[]>([]);
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
@@ -104,53 +101,45 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
 
     try {
       const text = await uploadedFile.text();
+      console.log('File loaded, length:', text.length);
       
-      const lines = text.trim().split('\n').filter(l => l.trim());
-      const firstLine = lines[0] || '';
+      // ALL FILES (.txt and .csv) go through background processing
+      // The AI will auto-detect the format and extract accordingly
       
-      const hasCommonHeaders = /name|phone|destination|price|client|customer/i.test(firstLine);
-      const hasConsistentCommas = lines.slice(0, 5).every(line => (line.match(/,/g) || []).length >= 2);
-      const looksLikeWhatsApp = firstLine.match(/[\[【\[].*?\d{1,2}\/\d{1,2}\/\d{2,4}.*?[\]】\]]/);
+      console.log('Starting background extraction...');
       
-      const isCSV = hasCommonHeaders && hasConsistentCommas && !looksLikeWhatsApp;
-      
-      if (isCSV) {
-        setFileType('csv');
-        const headers = lines[0].split(',').map(h => h.trim());
-        const rows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()));
-        setParsedData({ headers, rows });
-        const aiMapping = await intelligentFieldMapping(headers, rows);
-        setMapping(aiMapping);
-        setStep('upload');
-        alert('CSV mode not fully implemented in this version. Please use .txt format.');
-      } else {
-        setFileType('conversation');
-        
-        console.log('Starting background extraction...');
-        
-        const { data: batch, error: batchError } = await supabase
-          .from('import_batches')
-          .insert([{ status: 'pending' }])
-          .select()
-          .single();
+      const { data: batch, error: batchError } = await supabase
+        .from('import_batches')
+        .insert([{ status: 'pending' }])
+        .select()
+        .single();
 
-        if (batchError || !batch) {
-          console.error('Failed to create batch:', batchError);
-          throw new Error('Failed to create import batch');
-        }
+      if (batchError) {
+        console.error('Supabase batch creation error:', batchError);
+        throw new Error(`Failed to create import batch: ${batchError.message}`);
+      }
 
-        console.log('Batch created:', batch.id);
-        setCurrentBatchId(batch.id);
-        setStep('processing');
-        
+      if (!batch) {
+        console.error('No batch data returned');
+        throw new Error('Failed to create import batch: No data returned');
+      }
+
+      console.log('Batch created successfully:', batch.id);
+      setCurrentBatchId(batch.id);
+      setStep('processing');
+      
+      try {
         await startBackgroundExtraction(text, batch.id);
-        console.log('Background extraction started');
+        console.log('Background extraction started successfully');
+      } catch (extractError) {
+        console.error('Background extraction error:', extractError);
+        throw new Error(`Failed to start extraction: ${extractError instanceof Error ? extractError.message : 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error processing file:', error);
+      console.error('File upload error:', error);
       alert(language === 'EN' 
-        ? 'Error processing file. Please check the format or try again.' 
-        : 'خطأ في معالجة الملف. تحقق من التنسيق أو حاول مرة أخرى.');
+        ? `Error: ${error instanceof Error ? error.message : 'Unknown error'}` 
+        : `خطأ: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
       handleReset();
     } finally {
       setLoading(false);
@@ -204,9 +193,6 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
   const handleReset = () => {
     setStep('upload');
     setFile(null);
-    setFileType(null);
-    setParsedData(null);
-    setMapping(null);
     setExtractedLeads([]);
     setCurrentBatchId(null);
     setBatchProgress(null);
@@ -226,8 +212,8 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
             </h2>
             <p className="text-sm text-gray-600">
               {language === 'EN' 
-                ? 'Upload WhatsApp conversations or structured data - AI extracts leads automatically'
-                : 'قم بتحميل محادثات واتساب أو بيانات منظمة - يستخرج الذكاء الاصطناعي العملاء تلقائيًا'}
+                ? 'Upload any file format - AI automatically detects and extracts leads'
+                : 'قم بتحميل أي تنسيق ملف - يكتشف الذكاء الاصطناعي ويستخرج العملاء تلقائيًا'}
             </p>
           </div>
         </div>
@@ -241,7 +227,7 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
                 {language === 'EN' ? 'Drop your file here or click to browse' : 'اسحب ملفك هنا أو انقر للتصفح'}
               </p>
               <p className="text-sm text-gray-500">
-                {language === 'EN' ? 'Supports .txt files (any format with phone numbers)' : 'يدعم ملفات .txt (أي تنسيق مع أرقام هواتف)'}
+                {language === 'EN' ? 'Supports .txt and .csv files (any format)' : 'يدعم ملفات .txt و .csv (أي تنسيق)'}
               </p>
             </label>
 

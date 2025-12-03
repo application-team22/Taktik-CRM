@@ -1,5 +1,4 @@
 import { Handler } from '@netlify/functions';
-import { createClient } from '@supabase/supabase-js';
 
 interface ExtractedLead {
   name: string;
@@ -56,7 +55,7 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    const { conversationText, batchId } = JSON.parse(event.body || '{}');
+    const { conversationText } = JSON.parse(event.body || '{}');
 
     if (!conversationText || typeof conversationText !== 'string') {
       return {
@@ -66,20 +65,10 @@ const handler: Handler = async (event) => {
       };
     }
 
-    if (!batchId) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'batchId is required' }),
-      };
-    }
-
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-    const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-    const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
 
-    if (!OPENAI_API_KEY || !SUPABASE_URL || !SUPABASE_KEY) {
-      console.error('Missing environment variables');
+    if (!OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY not found in environment');
       return {
         statusCode: 500,
         headers,
@@ -87,41 +76,21 @@ const handler: Handler = async (event) => {
       };
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // Update status to processing
-    await supabase
-      .from('import_batches')
-      .update({ 
-        status: 'processing',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', batchId);
-
     const estimatedTokens = estimateTokens(conversationText);
-    console.log(`[${batchId}] Conversation estimated tokens: ${estimatedTokens}`);
+    console.log(`Conversation estimated tokens: ${estimatedTokens}`);
 
     let allLeads: ExtractedLead[] = [];
 
     if (estimatedTokens > 6000) {
+      // Chunk the conversation
       const chunks = chunkConversation(conversationText, 6000);
-      console.log(`[${batchId}] Splitting conversation into ${chunks.length} chunks`);
+      console.log(`Splitting conversation into ${chunks.length} chunks`);
 
-      // Update progress
-      await supabase
-        .from('import_batches')
-        .update({ 
-          total_chunks: chunks.length,
-          processed_chunks: 0
-        })
-        .eq('id', batchId);
-
-      // Process chunks in parallel batches
+      // Process chunks in parallel (batches of 3 to avoid rate limits)
       const batchSize = 3;
       for (let i = 0; i < chunks.length; i += batchSize) {
         const batch = chunks.slice(i, i + batchSize);
-        console.log(`[${batchId}] Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(chunks.length / batchSize)}`);
+        console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(chunks.length / batchSize)} (chunks ${i + 1}-${Math.min(i + batchSize, chunks.length)})`);
         
         const batchPromises = batch.map((chunk, index) => 
           extractLeadsFromChunk(chunk, OPENAI_API_KEY, i + index + 1, chunks.length)
@@ -131,15 +100,6 @@ const handler: Handler = async (event) => {
         batchResults.forEach(leads => {
           allLeads = allLeads.concat(leads);
         });
-
-        // Update progress
-        await supabase
-          .from('import_batches')
-          .update({ 
-            processed_chunks: Math.min(i + batchSize, chunks.length),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', batchId);
       }
     } else {
       allLeads = await extractLeadsFromChunk(conversationText, OPENAI_API_KEY, 1, 1);
@@ -150,56 +110,16 @@ const handler: Handler = async (event) => {
       new Map(allLeads.map(lead => [lead.phone_number, lead])).values()
     );
 
-    console.log(`[${batchId}] Total unique leads extracted: ${uniqueLeads.length}`);
-
-    // Save leads to temporary storage in import_batches
-    await supabase
-      .from('import_batches')
-      .update({ 
-        status: 'completed',
-        leads_data: uniqueLeads,
-        total_leads: uniqueLeads.length,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', batchId);
-
-    console.log(`[${batchId}] Processing completed successfully`);
+    console.log(`Total unique leads extracted: ${uniqueLeads.length}`);
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ 
-        message: 'Background processing completed',
-        leadsCount: uniqueLeads.length 
-      }),
+      body: JSON.stringify({ leads: uniqueLeads }),
     };
 
   } catch (error) {
     console.error('Function error:', error);
-    
-    // Try to update batch status to failed
-    try {
-      const { batchId } = JSON.parse(event.body || '{}');
-      if (batchId) {
-        const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-        const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
-        
-        if (SUPABASE_URL && SUPABASE_KEY) {
-          const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-          await supabase
-            .from('import_batches')
-            .update({ 
-              status: 'failed',
-              error_message: error instanceof Error ? error.message : 'Unknown error',
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', batchId);
-        }
-      }
-    } catch (updateError) {
-      console.error('Failed to update batch status:', updateError);
-    }
-
     return {
       statusCode: 500,
       headers,
@@ -216,19 +136,16 @@ function detectDataFormat(text: string): 'whatsapp' | 'structured' | 'csv-like' 
   const lines = text.trim().split('\n').filter(l => l.trim());
   const firstLine = lines[0] || '';
   
-  // WhatsApp format: timestamps like [4/24/23, 13:52:01] or ‏[‏4/24/23
   if (firstLine.match(/[\[【\[].*?\d{1,2}\/\d{1,2}\/\d{2,4}.*?[\]】\]]/)) {
     return 'whatsapp';
   }
   
-  // CSV-like: commas with consistent structure
   const commaCount = lines.slice(0, 3).map(l => (l.match(/,/g) || []).length);
   const avgCommas = commaCount.reduce((a, b) => a + b, 0) / commaCount.length;
   if (avgCommas >= 3) {
     return 'csv-like';
   }
   
-  // Structured text: lines with name, destination, phone pattern
   return 'structured';
 }
 
@@ -243,52 +160,33 @@ async function extractLeadsFromChunk(
   let prompt = '';
   
   if (format === 'whatsapp') {
-    prompt = `You are extracting leads from WhatsApp travel agency conversations (Arabic/English).
+    prompt = `Extract leads from WhatsApp conversation (Arabic/English).
 
-${totalChunks > 1 ? `Part ${chunkNumber} of ${totalChunks}.` : ''}
-
-CRITICAL RULES:
-1. Extract EVERY person with a phone number
-2. NO PHONE NUMBER = SKIP THIS PERSON (do not include)
-3. Each person = 1 lead
-4. Multiple destinations: "Istanbul - Trabzon"
-5. Status: ALWAYS "New Lead"
-
-REQUIRED FIELDS:
-- name: From conversation
-- phone_number: REQUIRED (any format: +90..., 05..., etc.). Must be present!
-- destination: Cities discussed
-- status: "New Lead"
-- price: All prices mentioned or "Not discussed"
-
-CONVERSATION:
-${text}
-
-Return ONLY valid JSON. Skip leads without phone numbers:
-[{"name":"Name","phone_number":"+90 XXX","destination":"City","status":"New Lead","price":"Details"}]`;
-  } else {
-    // For structured/CSV-like data
-    prompt = `Extract leads from structured data. CRITICAL: Extract EVERY SINGLE ROW.
-
-${totalChunks > 1 ? `Part ${chunkNumber} of ${totalChunks}.` : ''}
+CRITICAL: NO PHONE NUMBER = SKIP THIS PERSON
 
 RULES:
-1. Extract ALL entries - DO NOT skip any rows
-2. NO PHONE NUMBER = SKIP (required!)
-3. Parse format: CSV, comma-separated, key-value, etc.
-4. Status: ALWAYS "New Lead"
-5. IMPORTANT: If data has 50 rows, return 50 leads (minus header if CSV)
+1. Extract EVERY person with phone number
+2. Phone number REQUIRED (any format)
+3. Status: "New Lead"
 
 DATA:
 ${text}
 
-Return COMPLETE JSON array with ALL entries:
+JSON only:
+[{"name":"Name","phone_number":"+90 XXX","destination":"City","status":"New Lead","price":"Details"}]`;
+  } else {
+    prompt = `Extract ALL leads from structured data. DO NOT skip any rows.
+
+CRITICAL: Extract EVERY entry with phone number.
+
+DATA:
+${text}
+
+Return COMPLETE JSON with ALL entries:
 [{"name":"Name","phone_number":"+90 XXX","destination":"City","status":"New Lead","price":"400tl"}]`;
   }
 
-  prompt += `
-
-Empty array if no leads with phone numbers: []`;
+  prompt += `\n\nEmpty array if no phone numbers: []`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -302,15 +200,15 @@ Empty array if no leads with phone numbers: []`;
         messages: [
           {
             role: 'system',
-            content: 'You are a lead extraction expert. Return ONLY valid JSON arrays. No markdown, no explanations. Extract EVERY SINGLE lead from the data provided.',
+            content: 'You are a lead extraction expert. Return ONLY valid JSON arrays. Extract EVERY SINGLE lead from the data.',
           },
           {
             role: 'user',
             content: prompt,
           },
         ],
-        temperature: 0.1, // Lower temperature for more consistent extraction
-        max_tokens: 4000, // Increased from 2000 to handle more leads
+        temperature: 0.1,
+        max_tokens: 4000,
       }),
     });
 
@@ -329,19 +227,17 @@ Empty array if no leads with phone numbers: []`;
       leads = JSON.parse(cleanedContent);
 
       leads = leads.filter(lead => {
-        // MUST have phone number - this is critical!
+        // MUST have valid phone number with at least 3 digits
         if (!lead.phone_number || 
             lead.phone_number.trim() === '' || 
             lead.phone_number === 'Not available' ||
-            lead.phone_number === 'N/A' ||
-            !lead.phone_number.match(/\d{3,}/)) { // Must have at least 3 consecutive digits
-          console.log(`Skipping lead without valid phone: ${lead.name}`);
+            !lead.phone_number.match(/\d{3,}/)) {
+          console.log(`Skipping lead without phone: ${lead.name}`);
           return false;
         }
         
-        // Must have a name
         if (!lead.name || lead.name.trim() === '' || lead.name === 'Unknown') {
-          console.log(`Skipping lead without name: ${lead.phone_number}`);
+          console.log(`Skipping lead without name`);
           return false;
         }
         
