@@ -17,14 +17,17 @@ interface ExtractedLead {
   country?: string;
 }
 
+// n8n webhook URL
+const N8N_WEBHOOK_URL = 'https://n8n.boticslab.com/webhook/extract-leads';
+
 export default function ImportClients({ language, onNavigateToClients }: ImportClientsProps) {
   const [file, setFile] = useState<File | null>(null);
   const [extractedLeads, setExtractedLeads] = useState<ExtractedLead[]>([]);
-  const [batchProgress, setBatchProgress] = useState<{ status: string; totalChunks: number; processedChunks: number; totalLeads: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [step, setStep] = useState<'upload' | 'processing' | 'preview' | 'complete'>('upload');
   const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<string>('');
 
   const isRTL = language === 'AR';
 
@@ -42,42 +45,75 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
       // Estimate tokens (rough: 1 token ≈ 4 characters)
       const estimatedTokens = Math.ceil(text.length / 4);
       console.log('Estimated tokens:', estimatedTokens);
+      console.log('File size KB:', (text.length / 1024).toFixed(2));
       
-      // For production: Use direct function call instead of background
-      // This is more reliable on Netlify free tier
-      if (estimatedTokens > 15000) {
+      // Support files up to 400KB (~100,000 tokens)
+      if (text.length > 400000) {
         alert(language === 'EN' 
-          ? 'This file is very large. Please split it into smaller files (under 60KB) for best results.'
-          : 'هذا الملف كبير جدًا. يرجى تقسيمه إلى ملفات أصغر (أقل من 60 كيلوبايت) للحصول على أفضل النتائج.');
+          ? 'This file is too large (over 400KB). Please split it into smaller files.'
+          : 'هذا الملف كبير جدًا (أكثر من 400 كيلوبايت). يرجى تقسيمه إلى ملفات أصغر.');
         handleReset();
         setLoading(false);
         return;
       }
       
-      console.log('Starting extraction via direct function...');
+      console.log('Starting extraction via n8n...');
       setStep('processing');
-      setBatchProgress({
-        status: 'processing',
-        totalChunks: 1,
-        processedChunks: 0,
-        totalLeads: 0,
-      });
+      
+      // Estimate processing time
+      const estimatedSeconds = Math.ceil(estimatedTokens / 1000) * 3; // Rough estimate: 3 seconds per 1000 tokens
+      setProcessingStatus(
+        language === 'EN' 
+          ? `Processing... This may take ${estimatedSeconds}-${estimatedSeconds * 2} seconds`
+          : `جاري المعالجة... قد يستغرق هذا ${estimatedSeconds}-${estimatedSeconds * 2} ثانية`
+      );
       
       try {
-        // Call the regular (non-background) function which works reliably
-        const response = await fetch('/.netlify/functions/extract-leads', {
+        // Create an AbortController for timeout handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 seconds (2 minutes) timeout
+
+        // Call n8n webhook with extended timeout
+        const response = await fetch(N8N_WEBHOOK_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conversationText: text }),
+          headers: { 
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            conversationText: text 
+          }),
+          signal: controller.signal
         });
 
+        clearTimeout(timeoutId);
+
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Extraction failed');
+          const errorText = await response.text();
+          console.error('n8n response error:', errorText);
+          throw new Error(`n8n processing failed: ${response.status} ${response.statusText}`);
         }
 
-        const { leads } = await response.json();
-        console.log('Extraction completed, leads found:', leads.length);
+        const result = await response.json();
+        console.log('n8n response:', result);
+        
+        // Handle response structure - n8n returns different formats
+        let leads = [];
+        
+        // Check multiple possible response structures
+        if (result.leads && Array.isArray(result.leads)) {
+          leads = result.leads;
+        } else if (result.output && Array.isArray(result.output)) {
+          // Sometimes n8n wraps response in output array
+          const output = result.output[0];
+          if (output && output.leads) {
+            leads = output.leads;
+          }
+        } else if (Array.isArray(result)) {
+          // Direct array response
+          leads = result;
+        }
+        
+        console.log('Extracted leads:', leads);
         
         if (leads.length === 0) {
           alert(language === 'EN' 
@@ -93,10 +129,16 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
           country: detectCountryFromPhone(lead.phone_number) || 'Unknown',
         }));
 
+        console.log('Extraction completed, leads found:', leadsWithCountry.length);
         setExtractedLeads(leadsWithCountry);
         setStep('preview');
-      } catch (extractError) {
+      } catch (extractError: any) {
         console.error('Extraction error:', extractError);
+        
+        if (extractError.name === 'AbortError') {
+          throw new Error('Request timed out after 2 minutes. The file may be too large or the server is slow. Please try a smaller file or try again later.');
+        }
+        
         throw new Error(`Failed to extract leads: ${extractError instanceof Error ? extractError.message : 'Unknown error'}`);
       }
     } catch (error) {
@@ -154,8 +196,8 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
     setStep('upload');
     setFile(null);
     setExtractedLeads([]);
-    setBatchProgress(null);
     setImportResult(null);
+    setProcessingStatus('');
   };
 
   return (
@@ -186,7 +228,7 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
                 {language === 'EN' ? 'Drop your file here or click to browse' : 'اسحب ملفك هنا أو انقر للتصفح'}
               </p>
               <p className="text-sm text-gray-500">
-                {language === 'EN' ? 'Supports .txt and .csv files (any format)' : 'يدعم ملفات .txt و .csv (أي تنسيق)'}
+                {language === 'EN' ? 'Supports files up to 400KB (.txt and .csv)' : 'يدعم ملفات حتى 400 كيلوبايت (.txt و .csv)'}
               </p>
             </label>
 
@@ -222,13 +264,17 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
                 {language === 'EN' ? 'Processing Your File...' : 'جاري معالجة الملف...'}
               </h3>
               <p className="text-gray-600 mb-6">
-                {language === 'EN' 
-                  ? 'AI is extracting leads with phone numbers. This usually takes 10-30 seconds.'
-                  : 'الذكاء الاصطناعي يستخرج العملاء بأرقام الهواتف. عادة ما يستغرق ذلك 10-30 ثانية.'}
+                {processingStatus || (language === 'EN' 
+                  ? 'AI is extracting leads. This usually takes 10-120 seconds.'
+                  : 'الذكاء الاصطناعي يستخرج العملاء. عادة ما يستغرق ذلك 10-120 ثانية.')}
               </p>
-              <p className="text-sm text-gray-500">
-                {language === 'EN' ? 'Please wait...' : 'يرجى الانتظار...'}
-              </p>
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-gray-600">
+                  {language === 'EN' 
+                    ? '⚡ Processing on powerful n8n server - please wait...'
+                    : '⚡ المعالجة على خادم n8n قوي - يرجى الانتظار...'}
+                </p>
+              </div>
             </div>
           </div>
         )}

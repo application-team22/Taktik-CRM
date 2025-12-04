@@ -223,8 +223,27 @@ Return COMPLETE JSON with ALL entries:
 
     try {
       const content = data.choices[0].message.content.trim();
-      const cleanedContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      console.log(`Chunk ${chunkNumber} raw response length:`, content.length);
+      
+      // Remove markdown code blocks if present
+      let cleanedContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      
+      // Sometimes AI adds extra text before/after JSON - extract just the JSON array
+      const jsonMatch = cleanedContent.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        cleanedContent = jsonMatch[0];
+      } else {
+        console.error(`Chunk ${chunkNumber}: No JSON array found in response`);
+        console.error('Content:', content.substring(0, 500));
+        return [];
+      }
+      
       leads = JSON.parse(cleanedContent);
+
+      if (!Array.isArray(leads)) {
+        console.error(`Chunk ${chunkNumber}: Response is not an array`);
+        return [];
+      }
 
       leads = leads.filter(lead => {
         // MUST have valid phone number with at least 3 digits
@@ -248,10 +267,11 @@ Return COMPLETE JSON with ALL entries:
         return true;
       });
 
-      console.log(`Chunk ${chunkNumber}: Extracted ${leads.length} leads`);
+      console.log(`Chunk ${chunkNumber}: Extracted ${leads.length} valid leads`);
 
     } catch (parseError) {
       console.error(`Error parsing chunk ${chunkNumber}:`, parseError);
+      console.error('Raw content (first 1000 chars):', data.choices[0].message.content.substring(0, 1000));
       return [];
     }
 
