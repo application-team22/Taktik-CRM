@@ -45,9 +45,7 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
   // Cleanup polling on unmount
   useEffect(() => {
     return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
+      if (pollingInterval) clearInterval(pollingInterval);
     };
   }, [pollingInterval]);
 
@@ -67,41 +65,32 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
 
       setBatchStatus(data);
 
-      if (data.status === 'completed') {
-        // Stop polling
+      // Stop polling if batch is done
+      if (data.status === 'completed' || data.status === 'failed') {
         if (pollingInterval) {
           clearInterval(pollingInterval);
           setPollingInterval(null);
         }
+      }
 
-        // Parse leads data
-        const leads = typeof data.leads_data === 'string' 
-          ? JSON.parse(data.leads_data) 
-          : data.leads_data;
+      if (data.status === 'completed') {
+        const leads = typeof data.leads_data === 'string' ? JSON.parse(data.leads_data) : data.leads_data;
 
-        if (leads && leads.length > 0) {
-          // Add country detection
+        if (leads?.length) {
           const leadsWithCountry = leads.map((lead: ExtractedLead) => ({
             ...lead,
             country: detectCountryFromPhone(lead.phone_number) || 'Unknown',
           }));
-
           setExtractedLeads(leadsWithCountry);
           setStep('preview');
         } else {
-          alert(language === 'EN' 
+          alert(language === 'EN'
             ? 'No leads with phone numbers found in the file.'
             : 'لم يتم العثور على عملاء محتملين بأرقام هواتف في الملف.');
           handleReset();
         }
       } else if (data.status === 'failed') {
-        // Stop polling
-        if (pollingInterval) {
-          clearInterval(pollingInterval);
-          setPollingInterval(null);
-        }
-
-        alert(language === 'EN' 
+        alert(language === 'EN'
           ? `Processing failed: ${data.error_message || 'Unknown error'}`
           : `فشلت المعالجة: ${data.error_message || 'خطأ غير معروف'}`);
         handleReset();
@@ -120,30 +109,23 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
 
     try {
       const text = await uploadedFile.text();
-      console.log('File loaded, length:', text.length);
       
-      // Support files up to 400KB
       if (text.length > 400000) {
-        alert(language === 'EN' 
+        alert(language === 'EN'
           ? 'This file is too large. Please split it into smaller files.'
           : 'هذا الملف كبير جدًا. يرجى تقسيمه إلى ملفات أصغر.');
         handleReset();
         setLoading(false);
         return;
       }
-      
-      console.log('Starting async extraction...');
+
       setStep('processing');
 
-      // Send file to n8n
+      // Send file to n8n webhook
       const response = await fetch(N8N_WEBHOOK_URL, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          conversationText: text 
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationText: text }),
       });
 
       if (!response.ok) {
@@ -154,28 +136,22 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
 
       const result = await response.json();
       const newBatchId = result.id;
-      
-      if (!newBatchId) {
-        throw new Error('No batch ID returned from n8n');
-      }
 
-      console.log('Processing started, batch ID:', newBatchId);
+      if (!newBatchId) throw new Error('No batch ID returned from n8n');
+
       setBatchId(newBatchId);
 
-      // Start polling for status every 3 seconds
-      const interval = setInterval(() => {
-        pollBatchStatus(newBatchId);
-      }, 3000);
-      
+      // Start polling every 3 seconds
+      const interval = setInterval(() => pollBatchStatus(newBatchId), 3000);
       setPollingInterval(interval);
 
-      // Do initial poll immediately
+      // Immediate first poll
       pollBatchStatus(newBatchId);
 
     } catch (error) {
       console.error('File upload error:', error);
-      alert(language === 'EN' 
-        ? `Error: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      alert(language === 'EN'
+        ? `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
         : `خطأ: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
       handleReset();
     } finally {
@@ -201,14 +177,9 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
             country: lead.country || null,
           }]);
 
-          if (error) {
-            console.error('Error importing lead:', error);
-            failedCount++;
-          } else {
-            successCount++;
-          }
-        } catch (err) {
-          console.error('Error:', err);
+          if (error) failedCount++;
+          else successCount++;
+        } catch {
           failedCount++;
         }
       }
@@ -224,10 +195,7 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
   };
 
   const handleReset = () => {
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-      setPollingInterval(null);
-    }
+    if (pollingInterval) clearInterval(pollingInterval);
     setStep('upload');
     setFile(null);
     setExtractedLeads([]);
@@ -248,7 +216,7 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
               {language === 'EN' ? 'AI-Powered Import' : 'استيراد ذكي بالذكاء الاصطناعي'}
             </h2>
             <p className="text-sm text-gray-600">
-              {language === 'EN' 
+              {language === 'EN'
                 ? 'Upload any file format - AI automatically detects and extracts leads'
                 : 'قم بتحميل أي تنسيق ملف - يكتشف الذكاء الاصطناعي ويستخرج العملاء تلقائيًا'}
             </p>
@@ -299,24 +267,24 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
               <h3 className="text-2xl font-bold text-gray-900 mb-2">
                 {language === 'EN' ? 'Processing Your File...' : 'جاري معالجة الملف...'}
               </h3>
-              
+
               {batchStatus && (
                 <div className="mb-6">
                   <div className="flex items-center justify-center gap-2 text-gray-600 mb-4">
                     <Clock className="w-5 h-5" />
                     <span>
-                      {language === 'EN' 
+                      {language === 'EN'
                         ? `Processing chunk ${batchStatus.processed_chunks || 0}/${batchStatus.total_chunks || '...'}`
                         : `معالجة جزء ${batchStatus.processed_chunks || 0}/${batchStatus.total_chunks || '...'}`}
                     </span>
                   </div>
-                  
+
                   {batchStatus.total_chunks > 0 && (
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                        style={{ 
-                          width: `${((batchStatus.processed_chunks || 0) / batchStatus.total_chunks) * 100}%` 
+                        style={{
+                          width: `${((batchStatus.processed_chunks || 0) / batchStatus.total_chunks) * 100}%`,
                         }}
                       />
                     </div>
@@ -325,25 +293,25 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
               )}
 
               <p className="text-gray-600 mb-2">
-                {language === 'EN' 
+                {language === 'EN'
                   ? 'AI is extracting leads from your file.'
                   : 'الذكاء الاصطناعي يستخرج العملاء من ملفك.'}
               </p>
               <p className="text-sm text-gray-500">
-                {language === 'EN' 
+                {language === 'EN'
                   ? 'Large files may take several minutes. You can wait here or come back later.'
                   : 'قد تستغرق الملفات الكبيرة عدة دقائق. يمكنك الانتظار هنا أو العودة لاحقًا.'}
               </p>
-              
+
               <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                 <p className="text-sm text-gray-600">
-                  {language === 'EN' 
+                  {language === 'EN'
                     ? '⚡ Processing on powerful n8n server - no timeout limits!'
                     : '⚡ المعالجة على خادم n8n قوي - بدون حدود زمنية!'}
                 </p>
               </div>
 
-              <button 
+              <button
                 onClick={handleReset}
                 className="mt-6 px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
               >
