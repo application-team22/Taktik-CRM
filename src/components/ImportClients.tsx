@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Upload, Sparkles, CheckCircle, FileText, Download, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Upload, Sparkles, CheckCircle, FileText, Download, Loader2, Clock } from 'lucide-react';
 import { detectCountryFromPhone } from '../lib/phoneCountryDetector';
 import { supabase } from '../lib/supabase';
 
@@ -17,7 +17,16 @@ interface ExtractedLead {
   country?: string;
 }
 
-// n8n webhook URL
+interface BatchStatus {
+  id: string;
+  status: 'processing' | 'completed' | 'failed';
+  total_chunks: number;
+  processed_chunks: number;
+  total_leads: number;
+  leads_data: any;
+  error_message: string | null;
+}
+
 const N8N_WEBHOOK_URL = 'https://n8n.boticslab.com/webhook/extract-leads';
 
 export default function ImportClients({ language, onNavigateToClients }: ImportClientsProps) {
@@ -27,9 +36,80 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
   const [importing, setImporting] = useState(false);
   const [step, setStep] = useState<'upload' | 'processing' | 'preview' | 'complete'>('upload');
   const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
-  const [processingStatus, setProcessingStatus] = useState<string>('');
+  const [batchId, setBatchId] = useState<string | null>(null);
+  const [batchStatus, setBatchStatus] = useState<BatchStatus | null>(null);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
 
   const isRTL = language === 'AR';
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [pollingInterval]);
+
+  // Poll Supabase for batch status
+  const pollBatchStatus = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('import_batches')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error('Error polling batch status:', error);
+        return;
+      }
+
+      setBatchStatus(data);
+
+      if (data.status === 'completed') {
+        // Stop polling
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+          setPollingInterval(null);
+        }
+
+        // Parse leads data
+        const leads = typeof data.leads_data === 'string' 
+          ? JSON.parse(data.leads_data) 
+          : data.leads_data;
+
+        if (leads && leads.length > 0) {
+          // Add country detection
+          const leadsWithCountry = leads.map((lead: ExtractedLead) => ({
+            ...lead,
+            country: detectCountryFromPhone(lead.phone_number) || 'Unknown',
+          }));
+
+          setExtractedLeads(leadsWithCountry);
+          setStep('preview');
+        } else {
+          alert(language === 'EN' 
+            ? 'No leads with phone numbers found in the file.'
+            : 'لم يتم العثور على عملاء محتملين بأرقام هواتف في الملف.');
+          handleReset();
+        }
+      } else if (data.status === 'failed') {
+        // Stop polling
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+          setPollingInterval(null);
+        }
+
+        alert(language === 'EN' 
+          ? `Processing failed: ${data.error_message || 'Unknown error'}`
+          : `فشلت المعالجة: ${data.error_message || 'خطأ غير معروف'}`);
+        handleReset();
+      }
+    } catch (error) {
+      console.error('Polling error:', error);
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = e.target.files?.[0];
@@ -42,105 +122,56 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
       const text = await uploadedFile.text();
       console.log('File loaded, length:', text.length);
       
-      // Estimate tokens (rough: 1 token ≈ 4 characters)
-      const estimatedTokens = Math.ceil(text.length / 4);
-      console.log('Estimated tokens:', estimatedTokens);
-      console.log('File size KB:', (text.length / 1024).toFixed(2));
-      
-      // Support files up to 400KB (~100,000 tokens)
+      // Support files up to 400KB
       if (text.length > 400000) {
         alert(language === 'EN' 
-          ? 'This file is too large (over 400KB). Please split it into smaller files.'
-          : 'هذا الملف كبير جدًا (أكثر من 400 كيلوبايت). يرجى تقسيمه إلى ملفات أصغر.');
+          ? 'This file is too large. Please split it into smaller files.'
+          : 'هذا الملف كبير جدًا. يرجى تقسيمه إلى ملفات أصغر.');
         handleReset();
         setLoading(false);
         return;
       }
       
-      console.log('Starting extraction via n8n...');
+      console.log('Starting async extraction...');
       setStep('processing');
-      
-      // Estimate processing time
-      const estimatedSeconds = Math.ceil(estimatedTokens / 1000) * 3; // Rough estimate: 3 seconds per 1000 tokens
-      setProcessingStatus(
-        language === 'EN' 
-          ? `Processing... This may take ${estimatedSeconds}-${estimatedSeconds * 2} seconds`
-          : `جاري المعالجة... قد يستغرق هذا ${estimatedSeconds}-${estimatedSeconds * 2} ثانية`
-      );
-      
-      try {
-        // Create an AbortController for timeout handling
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 seconds (2 minutes) timeout
 
-        // Call n8n webhook with extended timeout
-        const response = await fetch(N8N_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            conversationText: text 
-          }),
-          signal: controller.signal
-        });
+      // Send file to n8n
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          conversationText: text 
+        })
+      });
 
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('n8n response error:', errorText);
-          throw new Error(`n8n processing failed: ${response.status} ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        console.log('n8n response:', result);
-        
-        // Handle response structure - n8n returns different formats
-        let leads = [];
-        
-        // Check multiple possible response structures
-        if (result.leads && Array.isArray(result.leads)) {
-          leads = result.leads;
-        } else if (result.output && Array.isArray(result.output)) {
-          // Sometimes n8n wraps response in output array
-          const output = result.output[0];
-          if (output && output.leads) {
-            leads = output.leads;
-          }
-        } else if (Array.isArray(result)) {
-          // Direct array response
-          leads = result;
-        }
-        
-        console.log('Extracted leads:', leads);
-        
-        if (leads.length === 0) {
-          alert(language === 'EN' 
-            ? 'No leads with phone numbers found in the file.'
-            : 'لم يتم العثور على عملاء محتملين بأرقام هواتف في الملف.');
-          handleReset();
-          return;
-        }
-
-        // Add country detection
-        const leadsWithCountry = leads.map((lead: ExtractedLead) => ({
-          ...lead,
-          country: detectCountryFromPhone(lead.phone_number) || 'Unknown',
-        }));
-
-        console.log('Extraction completed, leads found:', leadsWithCountry.length);
-        setExtractedLeads(leadsWithCountry);
-        setStep('preview');
-      } catch (extractError: any) {
-        console.error('Extraction error:', extractError);
-        
-        if (extractError.name === 'AbortError') {
-          throw new Error('Request timed out after 2 minutes. The file may be too large or the server is slow. Please try a smaller file or try again later.');
-        }
-        
-        throw new Error(`Failed to extract leads: ${extractError instanceof Error ? extractError.message : 'Unknown error'}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('n8n response error:', errorText);
+        throw new Error(`Failed to start processing: ${response.status}`);
       }
+
+      const result = await response.json();
+      const newBatchId = result.id;
+      
+      if (!newBatchId) {
+        throw new Error('No batch ID returned from n8n');
+      }
+
+      console.log('Processing started, batch ID:', newBatchId);
+      setBatchId(newBatchId);
+
+      // Start polling for status every 3 seconds
+      const interval = setInterval(() => {
+        pollBatchStatus(newBatchId);
+      }, 3000);
+      
+      setPollingInterval(interval);
+
+      // Do initial poll immediately
+      pollBatchStatus(newBatchId);
+
     } catch (error) {
       console.error('File upload error:', error);
       alert(language === 'EN' 
@@ -193,11 +224,16 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
   };
 
   const handleReset = () => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
     setStep('upload');
     setFile(null);
     setExtractedLeads([]);
     setImportResult(null);
-    setProcessingStatus('');
+    setBatchId(null);
+    setBatchStatus(null);
   };
 
   return (
@@ -249,7 +285,7 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
               <div className="mt-6 text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                 <p className="mt-3 text-gray-600">
-                  {language === 'EN' ? 'Analyzing file...' : 'جاري تحليل الملف...'}
+                  {language === 'EN' ? 'Starting processing...' : 'جاري بدء المعالجة...'}
                 </p>
               </div>
             )}
@@ -263,18 +299,56 @@ export default function ImportClients({ language, onNavigateToClients }: ImportC
               <h3 className="text-2xl font-bold text-gray-900 mb-2">
                 {language === 'EN' ? 'Processing Your File...' : 'جاري معالجة الملف...'}
               </h3>
-              <p className="text-gray-600 mb-6">
-                {processingStatus || (language === 'EN' 
-                  ? 'AI is extracting leads. This usually takes 10-120 seconds.'
-                  : 'الذكاء الاصطناعي يستخرج العملاء. عادة ما يستغرق ذلك 10-120 ثانية.')}
+              
+              {batchStatus && (
+                <div className="mb-6">
+                  <div className="flex items-center justify-center gap-2 text-gray-600 mb-4">
+                    <Clock className="w-5 h-5" />
+                    <span>
+                      {language === 'EN' 
+                        ? `Processing chunk ${batchStatus.processed_chunks || 0}/${batchStatus.total_chunks || '...'}`
+                        : `معالجة جزء ${batchStatus.processed_chunks || 0}/${batchStatus.total_chunks || '...'}`}
+                    </span>
+                  </div>
+                  
+                  {batchStatus.total_chunks > 0 && (
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                        style={{ 
+                          width: `${((batchStatus.processed_chunks || 0) / batchStatus.total_chunks) * 100}%` 
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <p className="text-gray-600 mb-2">
+                {language === 'EN' 
+                  ? 'AI is extracting leads from your file.'
+                  : 'الذكاء الاصطناعي يستخرج العملاء من ملفك.'}
               </p>
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+              <p className="text-sm text-gray-500">
+                {language === 'EN' 
+                  ? 'Large files may take several minutes. You can wait here or come back later.'
+                  : 'قد تستغرق الملفات الكبيرة عدة دقائق. يمكنك الانتظار هنا أو العودة لاحقًا.'}
+              </p>
+              
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                 <p className="text-sm text-gray-600">
                   {language === 'EN' 
-                    ? '⚡ Processing on powerful n8n server - please wait...'
-                    : '⚡ المعالجة على خادم n8n قوي - يرجى الانتظار...'}
+                    ? '⚡ Processing on powerful n8n server - no timeout limits!'
+                    : '⚡ المعالجة على خادم n8n قوي - بدون حدود زمنية!'}
                 </p>
               </div>
+
+              <button 
+                onClick={handleReset}
+                className="mt-6 px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                {language === 'EN' ? 'Cancel' : 'إلغاء'}
+              </button>
             </div>
           </div>
         )}
