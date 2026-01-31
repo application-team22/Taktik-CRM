@@ -35,16 +35,67 @@ export default function ChartsSection({ clients }: ChartsSectionProps) {
     return acc;
   }, {} as Record<string, number>);
 
+  const totalClients = clients.length;
   const countryData = Object.entries(countryCounts)
     .map(([country, count]) => ({
       name: country,
       value: count,
+      percentage: totalClients > 0 ? ((count / totalClients) * 100).toFixed(1) : '0',
     }))
     .sort((a, b) => b.value - a.value);
 
   const bookingTrend = generateBookingTrendData(clients);
 
   const COLORS = ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
+
+  // Custom label renderer for pie chart - shows only percentage, hides if < 5%
+  const renderCustomLabel = (props: any) => {
+    const { cx, cy, midAngle, innerRadius, outerRadius, percentage } = props;
+    const percentValue = parseFloat(percentage);
+
+    // Hide label if percentage is less than 5%
+    if (percentValue < 5) {
+      return null;
+    }
+
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="#1f2937"
+        textAnchor={x > cx ? 'start' : 'end'}
+        dominantBaseline="central"
+        className="font-semibold"
+        style={{ fontSize: '14px', fontWeight: 600 }}
+      >
+        {`${percentage}%`}
+      </text>
+    );
+  };
+
+  // Custom tooltip content
+  const renderCustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
+          <p className="text-sm font-semibold text-gray-900">{data.name}</p>
+          <p className="text-sm text-gray-600 mt-1">
+            Count: <span className="font-semibold">{data.value}</span>
+          </p>
+          <p className="text-sm text-gray-600">
+            Percentage: <span className="font-semibold">{data.percentage}%</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
@@ -90,40 +141,34 @@ export default function ChartsSection({ clients }: ChartsSectionProps) {
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, value }) => {
-                const displayName = name && name.length > 10 ? `${name.slice(0, 10)}...` : name;
-                return window.innerWidth < 640
-                  ? `${value}`
-                  : `${displayName}: ${value}`;
-              }}
-              outerRadius={window.innerWidth < 640 ? 70 : 80}
+              label={renderCustomLabel}
+              outerRadius={window.innerWidth < 640 ? 80 : 95}
+              innerRadius={0}
               fill="#8884d8"
               dataKey="value"
+              paddingAngle={2}
             >
               {countryData.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
-            <Tooltip
-              contentStyle={{
-                backgroundColor: '#fff',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '14px',
-              }}
-            />
+            <Tooltip content={renderCustomTooltip} />
           </PieChart>
         </ResponsiveContainer>
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {countryData.map((country, index) => (
-            <div key={country.name} className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-full flex-shrink-0"
-                style={{ backgroundColor: COLORS[index % COLORS.length] }}
-              />
-              <span className="text-xs text-gray-700 truncate">{country.name}</span>
-            </div>
-          ))}
+        <div className="mt-4 border-t pt-4">
+          <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Legend</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {countryData.map((country, index) => (
+              <div key={country.name} className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                />
+                <span className="text-xs text-gray-700 truncate">{country.name}</span>
+                <span className="text-xs text-gray-500 font-medium">({country.percentage}%)</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
