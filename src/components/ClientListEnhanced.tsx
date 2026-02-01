@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Edit2, Trash2, Search, X, Download, MessageSquare, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit2, Trash2, Search, X, Download, MessageSquare, Loader2, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { Client } from '../types/client';
 import { translations } from '../lib/translations';
 
@@ -10,13 +10,14 @@ interface ClientListEnhancedProps {
   onViewNotes: (client: Client) => void;
   onViewDetails: (client: Client) => void;
   language: 'EN' | 'AR';
+  isAdmin: boolean;
 }
 
 type SortOption = 'name-asc' | 'name-desc' | 'price-high' | 'price-low' | 'date-new' | 'date-old';
 
 const ITEMS_PER_PAGE = 20;
 
-export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNotes, onViewDetails, language }: ClientListEnhancedProps) {
+export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNotes, onViewDetails, language, isAdmin }: ClientListEnhancedProps) {
   const t = translations[language];
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -25,6 +26,7 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
   const [sortOption, setSortOption] = useState<SortOption>('date-new');
   const [currentPage, setCurrentPage] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setIsSearching(true);
@@ -191,6 +193,37 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Multi-select handlers
+  const handleSelectAll = () => {
+    if (selectedIds.size === paginatedClients.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedClients.map(c => c.id)));
+    }
+  };
+
+  const handleSelectOne = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleDeleteSelected = () => {
+    console.log('Delete selected clients:', Array.from(selectedIds));
+    // TODO: Implement bulk delete
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const isAllSelected = paginatedClients.length > 0 && selectedIds.size === paginatedClients.length;
+  const isSomeSelected = selectedIds.size > 0 && selectedIds.size < paginatedClients.length;
+
   return (
     <div className="space-y-4" dir={language === 'AR' ? 'rtl' : 'ltr'}>
       <div className="bg-white rounded-xl shadow-lg p-3 md:p-5">
@@ -276,6 +309,36 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
         </div>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-4">
+          <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 ${language === 'AR' ? 'flex-row-reverse' : ''}`}>
+            <div className={`flex items-center gap-3 ${language === 'AR' ? 'flex-row-reverse' : ''}`}>
+              <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
+                <span className="text-white font-semibold text-sm">
+                  {selectedIds.size} {selectedIds.size === 1 ? 'client' : 'clients'} selected
+                </span>
+              </div>
+              <button
+                onClick={handleClearSelection}
+                className="text-white/80 hover:text-white transition-colors text-sm font-medium hover:underline"
+              >
+                Clear selection
+              </button>
+            </div>
+            <div className={`flex items-center gap-2 ${language === 'AR' ? 'flex-row-reverse' : ''}`}>
+              <button
+                onClick={handleDeleteSelected}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Selected
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isSearching ? (
         <div className="bg-white rounded-xl shadow-lg p-12 text-center">
           <Loader2 className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-spin" />
@@ -296,6 +359,18 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
               <table className="w-full">
                 <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
                   <tr>
+                    <th className="px-4 py-4 text-center">
+                      <button
+                        onClick={handleSelectAll}
+                        className="w-5 h-5 rounded border-2 border-white flex items-center justify-center hover:bg-white/20 transition-colors"
+                        aria-label="Select all"
+                      >
+                        {isAllSelected && <Check className="w-4 h-4 text-white" />}
+                        {isSomeSelected && !isAllSelected && (
+                          <div className="w-2.5 h-0.5 bg-white rounded"></div>
+                        )}
+                      </button>
+                    </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">{t.fields.name}</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">{t.fields.phoneNumber}</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">{t.fields.destination}</th>
@@ -307,10 +382,26 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {paginatedClients.map((client) => (
-                    <tr key={client.id} className="hover:bg-blue-50 transition-all duration-200 cursor-pointer">
+                    <tr key={client.id} className={`hover:bg-blue-50 transition-all duration-200 ${selectedIds.has(client.id) ? 'bg-blue-50' : ''}`}>
+                      <td className="px-4 py-4 text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectOne(client.id);
+                          }}
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                            selectedIds.has(client.id)
+                              ? 'bg-blue-600 border-blue-600'
+                              : 'border-gray-300 hover:border-blue-400'
+                          }`}
+                          aria-label="Select client"
+                        >
+                          {selectedIds.has(client.id) && <Check className="w-4 h-4 text-white" />}
+                        </button>
+                      </td>
                       <td
                         onClick={() => onViewDetails(client)}
-                        className="px-6 py-4 text-sm font-medium text-gray-900"
+                        className="px-6 py-4 text-sm font-medium text-gray-900 cursor-pointer"
                       >
                         {client.name}
                       </td>
@@ -391,20 +482,37 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
             {paginatedClients.map((client) => (
               <div
                 key={client.id}
-                onClick={() => onViewDetails(client)}
-                className="bg-white rounded-xl shadow-lg p-4 border border-gray-200 hover:shadow-xl transition-all duration-200 cursor-pointer"
+                className={`bg-white rounded-xl shadow-lg p-4 border-2 hover:shadow-xl transition-all duration-200 ${
+                  selectedIds.has(client.id) ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                }`}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-semibold text-gray-900 truncate">{client.name}</h3>
-                    <p className="text-xs text-gray-500 mt-0.5 truncate">{client.phone_number}</p>
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectOne(client.id);
+                      }}
+                      className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-1 transition-all duration-200 ${
+                        selectedIds.has(client.id)
+                          ? 'bg-blue-600 border-blue-600'
+                          : 'border-gray-300 hover:border-blue-400'
+                      }`}
+                      aria-label="Select client"
+                    >
+                      {selectedIds.has(client.id) && <Check className="w-4 h-4 text-white" />}
+                    </button>
+                    <div className="flex-1 min-w-0" onClick={() => onViewDetails(client)}>
+                      <h3 className="text-base font-semibold text-gray-900 truncate">{client.name}</h3>
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">{client.phone_number}</p>
+                    </div>
                   </div>
                   <span className={`ml-2 inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border flex-shrink-0 ${getStatusColor(client.status)}`}>
                     {client.status}
                   </span>
                 </div>
 
-                <div className="space-y-2 mb-3">
+                <div className="space-y-2 mb-3 cursor-pointer" onClick={() => onViewDetails(client)}>
                   <div>
                     <p className="text-xs text-gray-600">Destination</p>
                     <p className="text-sm font-medium text-gray-900">{client.destination}</p>
