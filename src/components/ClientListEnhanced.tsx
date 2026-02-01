@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Edit2, Trash2, Search, X, Download, MessageSquare, Loader2, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { Edit2, Trash2, Search, X, Download, MessageSquare, Loader2, ChevronLeft, ChevronRight, Check, CheckSquare } from 'lucide-react';
 import { Client } from '../types/client';
 import { translations } from '../lib/translations';
+import { supabase } from '../lib/supabase';
+import Toast from './Toast';
+import ConfirmDialog from './ConfirmDialog';
 
 interface ClientListEnhancedProps {
   clients: Client[];
@@ -27,6 +30,13 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
   const [currentPage, setCurrentPage] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   useEffect(() => {
     setIsSearching(true);
@@ -213,8 +223,63 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
   };
 
   const handleDeleteSelected = () => {
-    console.log('Delete selected clients:', Array.from(selectedIds));
-    // TODO: Implement bulk delete
+    const selectedCount = selectedIds.size;
+    setConfirmDialog({
+      show: true,
+      title: 'Delete Selected Clients',
+      message: `Are you sure you want to delete ${selectedCount} ${selectedCount === 1 ? 'client' : 'clients'}? This action cannot be undone and will remove all associated data.`,
+      onConfirm: async () => {
+        try {
+          const idsArray = Array.from(selectedIds);
+
+          // Delete all selected clients from database
+          const { error } = await supabase
+            .from('clients')
+            .delete()
+            .in('id', idsArray);
+
+          if (error) throw error;
+
+          setToast({
+            message: `Successfully deleted ${selectedCount} ${selectedCount === 1 ? 'client' : 'clients'}!`,
+            type: 'success'
+          });
+
+          // Clear selection
+          setSelectedIds(new Set());
+
+          // Trigger refresh by calling onDelete for the first ID
+          // This will trigger the parent's fetchClients
+          if (idsArray.length > 0) {
+            // Small hack: the parent's onDelete also triggers fetchClients
+            // So we just need to make it refresh without showing another delete confirmation
+            window.location.reload();
+          }
+        } catch (error) {
+          console.error('Error deleting clients:', error);
+          setToast({
+            message: 'Failed to delete clients. Please try again.',
+            type: 'error'
+          });
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
+  };
+
+  const handleSelectAllVisible = () => {
+    // Check if all filtered clients are selected
+    const allFilteredIds = new Set(filteredAndSortedClients.map(c => c.id));
+    const allSelected = filteredAndSortedClients.every(c => selectedIds.has(c.id));
+
+    if (allSelected) {
+      // Deselect all
+      setSelectedIds(new Set());
+    } else {
+      // Select all filtered clients
+      setSelectedIds(allFilteredIds);
+    }
   };
 
   const handleClearSelection = () => {
@@ -317,6 +382,11 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
               <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
                 <span className="text-white font-semibold text-sm">
                   {selectedIds.size} {selectedIds.size === 1 ? 'client' : 'clients'} selected
+                  {selectedIds.size < filteredAndSortedClients.length && (
+                    <span className="text-white/80 ml-1">
+                      of {filteredAndSortedClients.length}
+                    </span>
+                  )}
                 </span>
               </div>
               <button
@@ -326,7 +396,14 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
                 Clear selection
               </button>
             </div>
-            <div className={`flex items-center gap-2 ${language === 'AR' ? 'flex-row-reverse' : ''}`}>
+            <div className={`flex items-center gap-2 flex-wrap ${language === 'AR' ? 'flex-row-reverse' : ''}`}>
+              <button
+                onClick={handleSelectAllVisible}
+                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-semibold transition-all duration-200 hover:scale-105 shadow-lg border border-white/30"
+              >
+                <CheckSquare className="w-4 h-4" />
+                {filteredAndSortedClients.every(c => selectedIds.has(c.id)) ? 'Deselect All' : 'Select All'}
+              </button>
               <button
                 onClick={handleDeleteSelected}
                 className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
@@ -620,6 +697,25 @@ export default function ClientListEnhanced({ clients, onEdit, onDelete, onViewNo
             </div>
           )}
         </>
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+          language={language}
+        />
+      )}
+
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+          language={language}
+        />
       )}
     </div>
   );
